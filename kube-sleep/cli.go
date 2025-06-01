@@ -1,73 +1,73 @@
 package kubesleep
 
 import (
-	"errors"
 	"log/slog"
 
-	flag "github.com/spf13/pflag"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
+  "github.com/spf13/cobra"
 )
 
-type cliConfig struct {
-	namespace string
-  force bool
-}
-
-func parseFlags(args []string) (cliConfig, error) {
+func NewParser(args []string, k8sFactory func()(k8simpl, error)) *cobra.Command {
 	slog.Debug("raw cli arguments", "args", args)
 
-	flags := flag.NewFlagSet(args[0], flag.ExitOnError)
-	namespace := flags.StringP("namespace", "n", "", "Kubernetes namespace")
-  force := flags.BoolP("force", "f", false, "Ignore the do-not-suspend label on the namespace")
+  config := &cliConfig{}
 
-	err := flags.Parse(args[1:])
-	if err != nil {
-		return cliConfig{}, err
-	}
+  rootCmd := &cobra.Command{
+    Use: "kubesleep",
+    Short: "kubesleep can sleep and wake kubernetes namespaces by scaling workloads down to zero and back up",
+  }
 
-	if *namespace == "" {
-		return cliConfig{}, errors.New("-n or --namespace is required")
-	}
-	config := cliConfig{
-		namespace: *namespace,
-    force: *force,
-	}
-	slog.Debug("Parsed cli arguments", "config", config)
-	return config, nil
+  rootCmd.SetArgs(args[1:])
+
+  suspendCmd := &cobra.Command{
+    Use: "suspend",
+    Short: "Suspend one or multiple kubernetes namespaces.",
+    RunE: func(cmd *cobra.Command, args []string) error {
+	    slog.Debug("Parsed cli arguments for the sleep subcommand", "config", config)
+      config.suspend(k8sFactory)
+      return nil
+    },
+  }
+  suspendCmd.Flags().StringVarP(
+    &config.namespace,
+    "namespace",
+    "n",
+    "",
+    "Kubernetes namespace",
+  )
+  suspendCmd.Flags().BoolVarP(
+    &config.force,
+    "force",
+    "f",
+    false,
+    "Ignore the do-not-suspend label on the namespace",
+  )
+
+  resumeCmd := &cobra.Command{
+    Use: "wake",
+    Short: "Wake a kubernetes namespace back up",
+    RunE: func(cmd *cobra.Command, args []string) error {
+	    slog.Debug("Parsed cli arguments for the wake subcommand", "config", config)
+      config.wake(k8sFactory)
+      return nil
+    },
+  }
+  resumeCmd.Flags().StringVarP(
+    &config.namespace,
+    "namespace",
+    "n",
+    "",
+    "Kubernetes namespace",
+  )
+  resumeCmd.MarkFlagRequired("namespace")
+
+  rootCmd.AddCommand(suspendCmd, resumeCmd)
+	return rootCmd
 }
 
 func Main(args []string) error {
-	config, err := parseFlags(args)
-	if err != nil {
-		return err
-	}
+	config := NewParser(args, NewK8simpl)
 
-	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
-		clientcmd.NewDefaultClientConfigLoadingRules(),
-		&clientcmd.ConfigOverrides{},
-	)
-	clientConfig, err := kubeConfig.ClientConfig()
-	if err != nil {
-		return err
-	}
-	clientset, err := kubernetes.NewForConfig(clientConfig)
-	if err != nil {
-		return err
-	}
-
-	k8s := k8simpl{clientset: clientset}
-
-	ns, err := k8s.suspendableNamespace(config.namespace)
-	if err != nil {
-		return err
-	}
-
-	if !ns.suspendable() && !config.force {
-    slog.Info("Skipping namespace", "namespace", config.namespace, "force", config.force, "suspendable", ns.suspendable())
-		return nil
-	}
-	err = ns.suspend(k8s)
+  err := config.Execute()
 	if err != nil {
 		return err
 	}

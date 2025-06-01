@@ -3,6 +3,7 @@ package kubesleep
 type suspendableNamespace interface {
 	suspendable() bool
 	suspend(k8simpl) error
+  wake(k8simpl) error
 }
 
 type suspendableNamespaceImpl struct {
@@ -12,6 +13,18 @@ type suspendableNamespaceImpl struct {
 
 func (n *suspendableNamespaceImpl) suspendable() bool {
 	return n._suspendable
+}
+
+func (n *suspendableNamespaceImpl) wake(k8s k8simpl) error {
+  stateFile, err := k8s.getStateFile(n.name)
+  if err != nil {
+    return err
+  }
+
+  for _, s := range stateFile.suspendables {
+    s.wake(n.name, k8s)
+  }
+  return nil
 }
 
 func (n *suspendableNamespaceImpl) suspend(k8s k8simpl) error {

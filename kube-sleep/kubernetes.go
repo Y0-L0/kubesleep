@@ -10,6 +10,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 const STATE_FILE_NAME = "kubesleep-suspend-state"
@@ -17,6 +18,24 @@ const STATE_FILE_KEY = "kubesleep.json"
 
 type k8simpl struct {
 	clientset *kubernetes.Clientset
+}
+
+func NewK8simpl() (k8simpl, error) {
+	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+  	clientcmd.NewDefaultClientConfigLoadingRules(),
+	  &clientcmd.ConfigOverrides{},
+  )
+
+	clientConfig, err := kubeConfig.ClientConfig()
+	if err != nil {
+		return k8simpl{}, err
+	}
+	clientset, err := kubernetes.NewForConfig(clientConfig)
+	if err != nil {
+		return k8simpl{}, err
+	}
+
+	return k8simpl{clientset: clientset}, nil
 }
 
 func (k8s k8simpl) suspendableNamespace(namespace string) (suspendableNamespace, error) {
@@ -84,9 +103,33 @@ func (k8s k8simpl) suspendDeployment(deployment *appsv1.Deployment) error {
   return nil
 }
 
-func (k8s k8simpl) getStatefulsets(namespaceString string) ([]suspendable, error) {
+func (k8s k8simpl)scaleDeployment(namespace string, name string, replicas int32)  error {
+  deployment, err := k8s.clientset.AppsV1().Deployments(namespace).Get(
+    context.TODO(),
+    name,
+    metav1.GetOptions{},
+  )
+  if err != nil {
+    return err
+  }
+  deployment.Spec.Replicas = &replicas
+
+  _, err = k8s.clientset.AppsV1().Deployments(deployment.Namespace).Update(
+    context.TODO(),
+    deployment,
+    metav1.UpdateOptions{},
+  )
+  if err != nil {
+    return err
+  }
+
+  slog.Info("Woke up Deployment", "name", name)
+  return nil
+}
+
+func (k8s k8simpl) getStatefulsets(namespace string) ([]suspendable, error) {
 	statefulSets, err := k8s.clientset.AppsV1().
-		StatefulSets(namespaceString).
+		StatefulSets(namespace).
 		List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, err
@@ -127,28 +170,39 @@ func (k8s k8simpl) suspendStatefulSet(statefulSet *appsv1.StatefulSet) error {
   return nil
 }
 
-func (k8s k8simpl) updateStateFile(namespace string, data *suspendStateFile) ( *suspendStateFile, error ) {
-  // Write a state file to a kubernetes configmap
-  // Will return the current state of the configmap.
-  configmap, err := k8s.clientset.CoreV1().ConfigMaps(namespace).Get(
+func (k8s k8simpl)scaleStatefulSet(namespace string, name string, replicas int32)  error {
+  statefulSet, err := k8s.clientset.AppsV1().StatefulSets(namespace).Get(
+    context.TODO(),
+    name,
+    metav1.GetOptions{},
+  )
+  if err != nil {
+    return err
+  }
+  statefulSet.Spec.Replicas = &replicas
+
+  _, err = k8s.clientset.AppsV1().StatefulSets(statefulSet.Namespace).Update(
+    context.TODO(),
+    statefulSet,
+    metav1.UpdateOptions{},
+  )
+  if err != nil {
+    return err
+  }
+
+  slog.Info("Woke up StatefulSet", "name", name)
+  return nil
+}
+
+func (k8s k8simpl) getStateFile(namespace string) (*suspendStateFile, error) {
+  result, err := k8s.clientset.CoreV1().ConfigMaps(namespace).Get(
 		context.TODO(),
 		STATE_FILE_NAME,
 		metav1.GetOptions{},
 	)
-
-  if apierrors.IsNotFound(err) {
-    panic(fmt.Errorf("Updating an existing statefile only works if it has been created before, %w", err))
-  }
   if err != nil {
     return nil, err
   }
-
-  configmap.Data[STATE_FILE_KEY] = data.toJson()
-  result, err := k8s.clientset.CoreV1().ConfigMaps(namespace).Update(
-    context.TODO(),
-    configmap,
-    metav1.UpdateOptions{},
-  )
   return newSuspendStateFileFromJson(result.Data[STATE_FILE_KEY]), nil
 }
 
@@ -160,7 +214,6 @@ func (k8s k8simpl) createStateFile(namespace string, data *suspendStateFile) ( *
 		STATE_FILE_NAME,
 		metav1.GetOptions{},
 	)
-
   if err == nil {
     slog.Info("statefile configmap already exists indicating a previously aborted suspend operation.", "configmap name", STATE_FILE_NAME)
     return newSuspendStateFileFromJson(result.Data[STATE_FILE_KEY]), nil
@@ -187,5 +240,30 @@ func (k8s k8simpl) createStateFile(namespace string, data *suspendStateFile) ( *
   if err != nil {
     return nil, err
   }
+  return newSuspendStateFileFromJson(result.Data[STATE_FILE_KEY]), nil
+}
+
+func (k8s k8simpl) updateStateFile(namespace string, data *suspendStateFile) ( *suspendStateFile, error ) {
+  // Write a state file to a kubernetes configmap
+  // Will return the current state of the configmap.
+  configmap, err := k8s.clientset.CoreV1().ConfigMaps(namespace).Get(
+		context.TODO(),
+		STATE_FILE_NAME,
+		metav1.GetOptions{},
+	)
+
+  if apierrors.IsNotFound(err) {
+    panic(fmt.Errorf("Updating an existing statefile only works if it has been created before, %w", err))
+  }
+  if err != nil {
+    return nil, err
+  }
+
+  configmap.Data[STATE_FILE_KEY] = data.toJson()
+  result, err := k8s.clientset.CoreV1().ConfigMaps(namespace).Update(
+    context.TODO(),
+    configmap,
+    metav1.UpdateOptions{},
+  )
   return newSuspendStateFileFromJson(result.Data[STATE_FILE_KEY]), nil
 }
