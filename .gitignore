@@ -33,3 +33,5 @@ go.work.sum
 
 # Application-specific
 kubesleep
+# Added by goreleaser init:
+dist/
