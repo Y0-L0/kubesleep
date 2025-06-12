@@ -22,7 +22,7 @@ func (s *Integrationtest) TestUpdateStatefile() {
 	defer deleteNamespace()
 
 	_, err = s.k8s.createStateFile("update-statefile", &suspendStateFile{
-		suspendables: []suspendable{},
+		suspendables: map[string]suspendable{},
 		finished:     false,
 	})
 	s.Require().NoError(err)

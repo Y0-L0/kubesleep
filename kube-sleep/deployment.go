@@ -7,7 +7,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (k8s k8simpl) getDeployments(namespace string) ([]suspendable, error) {
+func (k8s k8simpl) getDeployments(namespace string) (map[string]suspendable, error) {
 	deployments, err := k8s.clientset.AppsV1().
 		Deployments(namespace).
 		List(k8s.ctx, metav1.ListOptions{})
@@ -15,7 +15,7 @@ func (k8s k8simpl) getDeployments(namespace string) ([]suspendable, error) {
 		return nil, err
 	}
 
-	var suspendables []suspendable
+	suspendables := map[string]suspendable{}
 
 	for _, deployment := range deployments.Items {
 		suspend := func() error {
@@ -29,7 +29,7 @@ func (k8s k8simpl) getDeployments(namespace string) ([]suspendable, error) {
 			suspend:      suspend,
 		}
 		slog.Debug("parsed suspendable", "suspendable", s)
-		suspendables = append(suspendables, s)
+		suspendables[s.Identifier()] = s
 	}
 
 	return suspendables, nil

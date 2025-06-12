@@ -9,6 +9,10 @@ type suspendable struct {
 	suspend      func() error
 }
 
+func (s suspendable) Identifier() string {
+	return s.manifestType + s.name
+}
+
 func (s suspendable) wake(namespace string, k8s *k8simpl) error {
 	if s.manifestType == "StatefulSet" {
 		if err := k8s.scaleStatefulSet(namespace, s.name, s.replicas); err != nil {

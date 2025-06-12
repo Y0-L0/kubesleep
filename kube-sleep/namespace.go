@@ -1,5 +1,7 @@
 package kubesleep
 
+import "maps"
+
 type suspendableNamespace interface {
 	suspendable() bool
 	suspend(*k8simpl) error
@@ -36,7 +38,7 @@ func (n *suspendableNamespaceImpl) suspend(k8s *k8simpl) error {
 	if err != nil {
 		return err
 	}
-	suspendables = append(suspendables, sus...)
+	maps.Copy(suspendables, sus)
 
 	stateFile := &suspendStateFile{
 		suspendables: suspendables,

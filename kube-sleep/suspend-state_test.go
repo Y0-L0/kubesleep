@@ -5,7 +5,16 @@ var TEST_SUSPEND_STATE_FILE = suspendStateFile{
 	finished:     false,
 }
 
-const TEST_SUSPEND_STATE_FILE_JSON = "{\"suspendables\":[{\"ManifestType\":\"Deployment\",\"Name\":\"testDeployment\",\"Replicas\":2}],\"finished\":false}"
+const TEST_SUSPEND_STATE_FILE_JSON = `{
+  "suspendables": {
+    "Deploymenttest-deployment": {
+      "ManifestType": "Deployment",
+      "Name": "test-deployment",
+      "Replicas": 2
+    }
+  },
+  "finished": false
+}`
 
 func (s *Unittest) TestSerializeStatefile() {
 	json := TEST_SUSPEND_STATE_FILE.toJson()

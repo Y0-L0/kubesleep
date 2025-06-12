@@ -7,16 +7,16 @@ import (
 )
 
 type suspendStateFileDto struct {
-	Suspendables *[]suspendableDto `json:"suspendables"`
-	Finished     *bool             `json:"finished"`
+	Suspendables map[string]suspendableDto `json:"suspendables"`
+	Finished     *bool                     `json:"finished"`
 }
 
 type suspendStateFile struct {
-	suspendables []suspendable
+	suspendables map[string]suspendable
 	finished     bool
 }
 
-func newSuspendStateFile(suspendables []suspendable) suspendStateFile {
+func newSuspendStateFile(suspendables map[string]suspendable) suspendStateFile {
 	return suspendStateFile{
 		suspendables: suspendables,
 		finished:     false,
@@ -36,8 +36,8 @@ func newSuspendStateFileFromJson(data string) *suspendStateFile {
 		panic(fmt.Errorf("Missing field in state file json string. json: %s, stateFileDto: %+v", data, stateFileDto))
 	}
 
-	suspendables := make([]suspendable, len(*stateFileDto.Suspendables))
-	for i, s := range *stateFileDto.Suspendables {
+	suspendables := map[string]suspendable{}
+	for i, s := range stateFileDto.Suspendables {
 		suspendables[i] = s.fromDto()
 	}
 	stateFile := suspendStateFile{
@@ -49,15 +49,15 @@ func newSuspendStateFileFromJson(data string) *suspendStateFile {
 }
 
 func (s suspendStateFile) toJson() string {
-	suspendables := make([]suspendableDto, len(s.suspendables))
+	suspendables := map[string]suspendableDto{}
 	for i, s := range s.suspendables {
 		suspendables[i] = s.toDto()
 	}
 	stateFileDto := suspendStateFileDto{
-		&suspendables,
+		suspendables,
 		&s.finished,
 	}
-	jsonData, err := json.Marshal(stateFileDto)
+	jsonData, err := json.MarshalIndent(stateFileDto, "", "  ")
 	if err != nil {
 		panic(fmt.Errorf("failed to marshal Data to JSON: %w", err))
 	}

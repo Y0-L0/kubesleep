@@ -70,14 +70,15 @@ func (s *Integrationtest) TestGetStatefulSet() {
 	s.Require().NotEmpty(sus)
 
 	// simplify for easier comparison
-	sus[0].suspend = nil
+	actual := sus["StatefulSettest-statefulset"]
+	actual.suspend = nil
 	s.Require().Equal(
-		[]suspendable{suspendable{
+		suspendable{
 			manifestType: "StatefulSet",
 			name:         "test-statefulset",
 			replicas:     int32(2),
-		}},
-		sus,
+		},
+		actual,
 	)
 }
 
@@ -93,15 +94,15 @@ func (s *Integrationtest) TestSuspendStatefulSet() {
 	sus, err := s.k8s.getStatefulSets("suspend-statefulsets")
 	s.Require().NoError(err)
 	s.Require().NotEmpty(sus)
-	s.Require().Equal(int32(2), sus[0].replicas)
+	s.Require().Equal(int32(2), sus["StatefulSettest-statefulset"].replicas)
 
-	err = sus[0].suspend()
+	err = sus["StatefulSettest-statefulset"].suspend()
 	s.Require().NoError(err)
 
 	sus, err = s.k8s.getStatefulSets("suspend-statefulsets")
 	s.Require().NoError(err)
 	s.Require().NotEmpty(sus)
-	s.Require().Equal(int32(0), sus[0].replicas)
+	s.Require().Equal(int32(0), sus["StatefulSettest-statefulset"].replicas)
 }
 
 func (s *Integrationtest) TestScaleStatefulSet() {
@@ -118,5 +119,5 @@ func (s *Integrationtest) TestScaleStatefulSet() {
 	sus, err := s.k8s.getStatefulSets("scale-statefulsets")
 	s.Require().NoError(err)
 	s.Require().NotEmpty(sus)
-	s.Require().Equal(int32(2), sus[0].replicas)
+	s.Require().Equal(int32(2), sus["StatefulSettest-statefulset"].replicas)
 }
