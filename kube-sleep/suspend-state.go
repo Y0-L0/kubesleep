@@ -7,8 +7,8 @@ import (
 )
 
 type suspendStateFileDto struct {
-	Suspendables *[]suspendableDto
-	Finished     *bool
+	Suspendables *[]suspendableDto `json:"suspendables"`
+	Finished     *bool             `json:"finished"`
 }
 
 type suspendStateFile struct {
