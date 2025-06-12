@@ -21,14 +21,6 @@ func (s *Integrationtest) TestUpdateStatefile() {
 	s.Require().NoError(err)
 	defer deleteNamespace()
 
-	sus := []suspendable{
-		suspendable{
-			manifestType: "Deployment",
-			name:         "testDeployment",
-			replicas:     int32(2),
-		},
-	}
-
 	_, err = s.k8s.createStateFile("update-statefile", &suspendStateFile{
 		suspendables: []suspendable{},
 		finished:     false,
@@ -37,12 +29,12 @@ func (s *Integrationtest) TestUpdateStatefile() {
 	defer s.k8s.deleteStateFile("update-statefile")
 
 	_, err = s.k8s.updateStateFile("update-statefile", &suspendStateFile{
-		suspendables: sus,
+		suspendables: TEST_SUSPENDABLES,
 		finished:     true,
 	})
 
 	stateFile, err := s.k8s.getStateFile("update-statefile")
 	slog.Debug("Read updated state file from cluster", "stateFile", stateFile)
 	s.Require().True(stateFile.finished)
-	s.Require().Equal(sus, stateFile.suspendables)
+	s.Require().Equal(TEST_SUSPENDABLES, stateFile.suspendables)
 }

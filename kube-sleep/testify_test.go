@@ -32,3 +32,11 @@ func (loggingSuite *LoggingSuite) TearDownTest() {
 	loggingSuite.T().Log("=== Captured Production Logs ===\n")
 	loggingSuite.T().Log(loggingSuite.logBuf.String())
 }
+
+type Unittest struct {
+	LoggingSuite
+}
+
+func TestUnit(t *testing.T) {
+	suite.Run(t, new(Unittest))
+}
