@@ -7,7 +7,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (k8s k8simpl) getStatefulsets(namespace string) ([]suspendable, error) {
+func (k8s k8simpl) getStatefulSets(namespace string) ([]suspendable, error) {
 	statefulSets, err := k8s.clientset.AppsV1().
 		StatefulSets(namespace).
 		List(k8s.ctx, metav1.ListOptions{})

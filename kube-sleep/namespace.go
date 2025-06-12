@@ -32,7 +32,7 @@ func (n *suspendableNamespaceImpl) suspend(k8s *k8simpl) error {
 	if err != nil {
 		return err
 	}
-	sus, err := k8s.getStatefulsets(n.name)
+	sus, err := k8s.getStatefulSets(n.name)
 	if err != nil {
 		return err
 	}
