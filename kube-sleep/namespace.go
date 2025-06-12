@@ -24,8 +24,12 @@ func (n *suspendableNamespaceImpl) wake(k8s *k8simpl) error {
 	}
 
 	for _, s := range stateFile.suspendables {
-		s.wake(n.name, k8s)
+		err = s.wake(n.name, k8s)
+		if err != nil {
+			return err
+		}
 	}
+	k8s.deleteStateFile(n.name)
 	return nil
 }
 
