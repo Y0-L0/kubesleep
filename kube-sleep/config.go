@@ -7,7 +7,7 @@ type cliConfig struct {
 	force     bool
 }
 
-func (c cliConfig) suspend(k8sFactory func() (*k8simpl, error)) error {
+func (c cliConfig) suspend(k8sFactory func() (*K8Simpl, error)) error {
 	k8s, err := k8sFactory()
 	if err != nil {
 		return err
@@ -30,7 +30,7 @@ func (c cliConfig) suspend(k8sFactory func() (*k8simpl, error)) error {
 	return nil
 }
 
-func (c cliConfig) wake(k8sFactory func() (*k8simpl, error)) error {
+func (c cliConfig) wake(k8sFactory func() (*K8Simpl, error)) error {
 	if c.namespace == "" {
 		panic("Invalid namespace value")
 	}

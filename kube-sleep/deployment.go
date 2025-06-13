@@ -7,7 +7,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (k8s k8simpl) getDeployments(namespace string) (map[string]suspendable, error) {
+func (k8s K8Simpl) getDeployments(namespace string) (map[string]suspendable, error) {
 	deployments, err := k8s.clientset.AppsV1().
 		Deployments(namespace).
 		List(k8s.ctx, metav1.ListOptions{})
@@ -35,7 +35,7 @@ func (k8s k8simpl) getDeployments(namespace string) (map[string]suspendable, err
 	return suspendables, nil
 }
 
-func (k8s k8simpl) suspendDeployment(deployment *appsv1.Deployment) error {
+func (k8s K8Simpl) suspendDeployment(deployment *appsv1.Deployment) error {
 	replicas := int32(0)
 	deployment.Spec.Replicas = &replicas
 	_, err := k8s.clientset.AppsV1().Deployments(deployment.Namespace).Update(
@@ -50,7 +50,7 @@ func (k8s k8simpl) suspendDeployment(deployment *appsv1.Deployment) error {
 	return nil
 }
 
-func (k8s k8simpl) scaleDeployment(namespace string, name string, replicas int32) error {
+func (k8s K8Simpl) scaleDeployment(namespace string, name string, replicas int32) error {
 	deployment, err := k8s.clientset.AppsV1().Deployments(namespace).Get(
 		k8s.ctx,
 		name,

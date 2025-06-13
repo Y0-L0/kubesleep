@@ -13,8 +13,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 )
 
-func testCluster() (*k8simpl, func() error, error) {
-	k8s := &k8simpl{}
+func testCluster() (*K8Simpl, func() error, error) {
+	k8s := &K8Simpl{}
 
 	slog.Debug("Starting a testing kubernetes control plane")
 	testEnv := &envtest.Environment{}
@@ -38,7 +38,7 @@ func testCluster() (*k8simpl, func() error, error) {
 	return k8s, stop, nil
 }
 
-func testNamespace(name string, k8s *k8simpl) (func() error, error) {
+func testNamespace(name string, k8s *K8Simpl) (func() error, error) {
 	namespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
@@ -58,7 +58,7 @@ func testNamespace(name string, k8s *k8simpl) (func() error, error) {
 type Integrationtest struct {
 	LoggingSuite
 	stopCluster func() error
-	k8s         *k8simpl
+	k8s         *K8Simpl
 }
 
 func (s *Integrationtest) SetupSuite() {

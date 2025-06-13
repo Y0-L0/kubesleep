@@ -12,7 +12,7 @@ import (
 const STATE_FILE_NAME = "kubesleep-suspend-state"
 const STATE_FILE_KEY = "kubesleep.json"
 
-func (k8s k8simpl) getStateFile(namespace string) (*suspendStateFile, error) {
+func (k8s K8Simpl) getStateFile(namespace string) (*suspendStateFile, error) {
 	result, err := k8s.clientset.CoreV1().ConfigMaps(namespace).Get(
 		k8s.ctx,
 		STATE_FILE_NAME,
@@ -24,7 +24,7 @@ func (k8s k8simpl) getStateFile(namespace string) (*suspendStateFile, error) {
 	return newSuspendStateFileFromJson(result.Data[STATE_FILE_KEY]), nil
 }
 
-func (k8s *k8simpl) createStateFile(namespace string, data *suspendStateFile) (*suspendStateFile, error) {
+func (k8s *K8Simpl) createStateFile(namespace string, data *suspendStateFile) (*suspendStateFile, error) {
 	// Create a new state file as a kubernetes configmap
 	// Will return the current state of the configmap inside the cluster.
 	result, err := k8s.clientset.CoreV1().ConfigMaps(namespace).Get(
@@ -61,7 +61,7 @@ func (k8s *k8simpl) createStateFile(namespace string, data *suspendStateFile) (*
 	return newSuspendStateFileFromJson(result.Data[STATE_FILE_KEY]), nil
 }
 
-func (k8s *k8simpl) updateStateFile(namespace string, data *suspendStateFile) (*suspendStateFile, error) {
+func (k8s *K8Simpl) updateStateFile(namespace string, data *suspendStateFile) (*suspendStateFile, error) {
 	// Write a state file to a kubernetes configmap
 	// Will return the current state of the configmap.
 	configmap, err := k8s.clientset.CoreV1().ConfigMaps(namespace).Get(
@@ -86,6 +86,6 @@ func (k8s *k8simpl) updateStateFile(namespace string, data *suspendStateFile) (*
 	return newSuspendStateFileFromJson(result.Data[STATE_FILE_KEY]), nil
 }
 
-func (k8s *k8simpl) deleteStateFile(namespace string) error {
+func (k8s *K8Simpl) deleteStateFile(namespace string) error {
 	return k8s.clientset.CoreV1().ConfigMaps(namespace).Delete(k8s.ctx, STATE_FILE_NAME, metav1.DeleteOptions{})
 }

@@ -4,8 +4,8 @@ import "maps"
 
 type suspendableNamespace interface {
 	suspendable() bool
-	suspend(*k8simpl) error
-	wake(*k8simpl) error
+	suspend(*K8Simpl) error
+	wake(*K8Simpl) error
 }
 
 type suspendableNamespaceImpl struct {
@@ -17,7 +17,7 @@ func (n *suspendableNamespaceImpl) suspendable() bool {
 	return n._suspendable
 }
 
-func (n *suspendableNamespaceImpl) wake(k8s *k8simpl) error {
+func (n *suspendableNamespaceImpl) wake(k8s *K8Simpl) error {
 	stateFile, err := k8s.getStateFile(n.name)
 	if err != nil {
 		return err
@@ -33,7 +33,7 @@ func (n *suspendableNamespaceImpl) wake(k8s *k8simpl) error {
 	return nil
 }
 
-func (n *suspendableNamespaceImpl) suspend(k8s *k8simpl) error {
+func (n *suspendableNamespaceImpl) suspend(k8s *K8Simpl) error {
 	suspendables, err := k8s.getDeployments(n.name)
 	if err != nil {
 		return err

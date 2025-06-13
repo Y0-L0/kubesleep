@@ -6,7 +6,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func createDeployment(k8s k8simpl, namespace string, name string, replicas int32) (func() error, error) {
+func createDeployment(k8s K8Simpl, namespace string, name string, replicas int32) (func() error, error) {
 	labels := map[string]string{"app": name}
 
 	deployment := &appsv1.Deployment{

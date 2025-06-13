@@ -9,13 +9,13 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-type k8simpl struct {
+type K8Simpl struct {
 	clientset *kubernetes.Clientset
 	ctx       context.Context
 	cancel    context.CancelFunc
 }
 
-func NewK8simpl() (*k8simpl, error) {
+func NewK8simpl() (*K8Simpl, error) {
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
 		clientcmd.NewDefaultClientConfigLoadingRules(),
 		&clientcmd.ConfigOverrides{},
@@ -26,7 +26,7 @@ func NewK8simpl() (*k8simpl, error) {
 		return nil, err
 	}
 
-	k8s := &k8simpl{}
+	k8s := &K8Simpl{}
 	k8s.clientset, err = kubernetes.NewForConfig(clientConfig)
 	if err != nil {
 		return nil, err
@@ -36,7 +36,7 @@ func NewK8simpl() (*k8simpl, error) {
 	return k8s, nil
 }
 
-func (k8s k8simpl) suspendableNamespace(namespace string) (suspendableNamespace, error) {
+func (k8s K8Simpl) suspendableNamespace(namespace string) (suspendableNamespace, error) {
 	kubernetesNamespace, err := k8s.clientset.CoreV1().Namespaces().Get(k8s.ctx, namespace, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
