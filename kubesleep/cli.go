@@ -23,8 +23,7 @@ func newParser(args []string, k8sFactory func() (K8S, error)) (*cobra.Command, *
 		Short: "Suspend one or multiple kubernetes namespaces.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			slog.Debug("Parsed cli arguments for the sleep subcommand", "config", config)
-			config.suspend(k8sFactory)
-			return nil
+			return config.suspend(k8sFactory)
 		},
 	}
 	suspendCmd.Flags().StringVarP(
@@ -47,8 +46,7 @@ func newParser(args []string, k8sFactory func() (K8S, error)) (*cobra.Command, *
 		Short: "Wake a kubernetes namespace back up",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			slog.Debug("Parsed cli arguments for the wake subcommand", "config", config)
-			config.wake(k8sFactory)
-			return nil
+			return config.wake(k8sFactory)
 		},
 	}
 	resumeCmd.Flags().StringVarP(
