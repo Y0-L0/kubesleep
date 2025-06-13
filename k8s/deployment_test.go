@@ -1,7 +1,7 @@
 package k8s
 
 import (
-	kubesleep "github.com/Y0-L0/kubesleep/kube-sleep"
+	kubesleep "github.com/Y0-L0/kubesleep/kubesleep"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

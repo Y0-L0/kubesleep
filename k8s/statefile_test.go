@@ -3,7 +3,7 @@ package k8s
 import (
 	"log/slog"
 
-	kubesleep "github.com/Y0-L0/kubesleep/kube-sleep"
+	kubesleep "github.com/Y0-L0/kubesleep/kubesleep"
 )
 
 var TEST_SUSPENDABLES = map[string]kubesleep.Suspendable{

@@ -36,7 +36,7 @@ func (n *suspendableNamespaceImpl) wake(k8s K8S) error {
 			return err
 		}
 	}
-	k8s.deleteStateFile(n.name)
+	k8s.DeleteStateFile(n.name)
 	return nil
 }
 

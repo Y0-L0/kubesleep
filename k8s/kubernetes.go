@@ -4,7 +4,7 @@ import (
 	"context"
 	"log/slog"
 
-	kubesleep "github.com/Y0-L0/kubesleep/kube-sleep"
+	kubesleep "github.com/Y0-L0/kubesleep/kubesleep"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"

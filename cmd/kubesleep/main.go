@@ -6,7 +6,7 @@ import (
 	"os"
 
 	k8s "github.com/Y0-L0/kubesleep/k8s"
-	kubesleep "github.com/Y0-L0/kubesleep/kube-sleep"
+	kubesleep "github.com/Y0-L0/kubesleep/kubesleep"
 )
 
 func setupLogging(logLevel slog.Level) {
