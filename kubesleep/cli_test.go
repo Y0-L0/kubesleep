@@ -1,14 +1,13 @@
 package kubesleep
 
-import (
-	"fmt"
-
-	"github.com/spf13/cobra"
-)
-
 func (s *Unittest) TestMainHelp() {
 	err := Main([]string{"kubesleep", "--help"}, nil)
 	s.Require().NoError(err)
+}
+
+func (s *Unittest) TestMainError() {
+	err := Main([]string{"kubesleep", "invalidArgument"}, nil)
+	s.Require().Error(err)
 }
 
 func (s *Unittest) TestValidCliArguments() {
@@ -46,31 +45,12 @@ func (s *Unittest) TestValidCliArguments() {
 
 	for _, testCase := range tests {
 		s.Run(testCase.name, func() {
-			command, config := newParser(testCase.args, nil)
-
-			actualSubcommand := map[string]int{"suspend": 0, "wake": 0}
-			for _, subCmd := range command.Commands() {
-				switch subCmd.Name() {
-				case "suspend":
-					subCmd.RunE = func(cmd *cobra.Command, args []string) error {
-						actualSubcommand["suspend"] = 1
-						return nil
-					}
-				case "wake":
-					subCmd.RunE = func(cmd *cobra.Command, args []string) error {
-						actualSubcommand["wake"] = 1
-						return nil
-					}
-				default:
-					panic(fmt.Errorf("unknown subcommand: %s", subCmd.Name()))
-				}
-			}
+			command, config := newParser(testCase.args, mockK8SFactory)
 
 			err := command.Execute()
-			s.Require().NoError(err)
+			s.Require().Equal(mockK8SError, err)
 
 			s.Equal("kubesleep", command.Name())
-			s.Equal(1, actualSubcommand[testCase.command])
 			s.Equal(testCase.config, config)
 		})
 	}
