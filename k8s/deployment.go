@@ -24,7 +24,7 @@ func (k8s K8Simpl) GetDeployments(namespace string) (map[string]kubesleep.Suspen
 		}
 
 		s := kubesleep.NewSuspendable(
-			"Deployment",
+			kubesleep.Deplyoment,
 			deployment.ObjectMeta.Name,
 			*deployment.Spec.Replicas,
 			suspend,

@@ -2,14 +2,21 @@ package kubesleep
 
 import "fmt"
 
+type ManifestType int
+
+const (
+	Deplyoment ManifestType = iota
+	StatefulSet
+)
+
 type Suspendable struct {
-	manifestType string
+	manifestType ManifestType
 	name         string
 	Replicas     int32
 	Suspend      func() error
 }
 
-func NewSuspendable(manifestType string, name string, Replicas int32, suspend func() error) Suspendable {
+func NewSuspendable(manifestType ManifestType, name string, Replicas int32, suspend func() error) Suspendable {
 	return Suspendable{
 		manifestType: manifestType,
 		name:         name,
@@ -19,21 +26,21 @@ func NewSuspendable(manifestType string, name string, Replicas int32, suspend fu
 }
 
 func (s Suspendable) Identifier() string {
-	return s.manifestType + s.name
+	return fmt.Sprintf("%d:%s", s.manifestType, s.name)
 }
 
 func (s Suspendable) wake(namespace string, k8s K8S) error {
 	switch s.manifestType {
-	case "StatefulSet":
-		if err := k8s.ScaleStatefulSet(namespace, s.name, s.Replicas); err != nil {
-			return err
-		}
-	case "Deployment":
+	case Deplyoment:
 		if err := k8s.ScaleDeployment(namespace, s.name, s.Replicas); err != nil {
 			return err
 		}
+	case StatefulSet:
+		if err := k8s.ScaleStatefulSet(namespace, s.name, s.Replicas); err != nil {
+			return err
+		}
 	default:
-		return fmt.Errorf("Suspendable: %s with invalid namifestType: %s", s.name, s.manifestType)
+		return fmt.Errorf("Suspendable: %s with invalid namifestType: %d", s.name, s.manifestType)
 	}
 	return nil
 }
@@ -47,7 +54,7 @@ func (s Suspendable) toDto() suspendableDto {
 }
 
 type suspendableDto struct {
-	ManifestType string
+	ManifestType ManifestType
 	Name         string
 	Replicas     int32
 }

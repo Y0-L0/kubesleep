@@ -24,7 +24,7 @@ func (k8s K8Simpl) GetStatefulSets(namespace string) (map[string]kubesleep.Suspe
 		}
 
 		s := kubesleep.NewSuspendable(
-			"StatefulSet",
+			kubesleep.StatefulSet,
 			statefulSet.ObjectMeta.Name,
 			*statefulSet.Spec.Replicas,
 			suspend,

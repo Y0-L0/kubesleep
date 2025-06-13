@@ -7,8 +7,8 @@ var TEST_SUSPEND_STATE_FILE = SuspendStateFile{
 
 const TEST_SUSPEND_STATE_FILE_JSON = `{
   "suspendables": {
-    "Deploymenttest-deployment": {
-      "ManifestType": "Deployment",
+    "0:test-deployment": {
+      "ManifestType": 0,
       "Name": "test-deployment",
       "Replicas": 2
     }

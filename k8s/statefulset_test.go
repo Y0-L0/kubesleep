@@ -72,14 +72,14 @@ func (s *Integrationtest) TestGetStatefulSet() {
 	sus, err := s.k8s.GetStatefulSets("get-statefulsets")
 	s.Require().NoError(err)
 
-	s.Require().Equal([]string{"StatefulSettest-statefulset"}, slices.Collect(maps.Keys(sus)))
+	s.Require().Equal([]string{"1:test-statefulset"}, slices.Collect(maps.Keys(sus)))
 
 	// simplify for easier comparison
-	actual := sus["StatefulSettest-statefulset"]
-	actual.suspend = nil
+	actual := sus["1:test-statefulset"]
+	actual.Suspend = nil
 	s.Require().Equal(
 		kubesleep.NewSuspendable(
-			"StatefulSet",
+			kubesleep.StatefulSet,
 			"test-statefulset",
 			int32(2),
 			nil,
@@ -100,15 +100,15 @@ func (s *Integrationtest) TestSuspendStatefulSet() {
 	sus, err := s.k8s.GetStatefulSets("suspend-statefulsets")
 	s.Require().NoError(err)
 	s.Require().NotEmpty(sus)
-	s.Require().Equal(int32(2), sus["StatefulSettest-statefulset"].Replicas)
+	s.Require().Equal(int32(2), sus["1:test-statefulset"].Replicas)
 
-	err = sus["StatefulSettest-statefulset"].Suspend()
+	err = sus["1:test-statefulset"].Suspend()
 	s.Require().NoError(err)
 
 	sus, err = s.k8s.GetStatefulSets("suspend-statefulsets")
 	s.Require().NoError(err)
 	s.Require().NotEmpty(sus)
-	s.Require().Equal(int32(0), sus["StatefulSettest-statefulset"].Replicas)
+	s.Require().Equal(int32(0), sus["1:test-statefulset"].Replicas)
 }
 
 func (s *Integrationtest) TestScaleStatefulSet() {
@@ -125,5 +125,5 @@ func (s *Integrationtest) TestScaleStatefulSet() {
 	sus, err := s.k8s.GetStatefulSets("scale-statefulsets")
 	s.Require().NoError(err)
 	s.Require().NotEmpty(sus)
-	s.Require().Equal(int32(2), sus["StatefulSettest-statefulset"].Replicas)
+	s.Require().Equal(int32(2), sus["1:test-statefulset"].Replicas)
 }

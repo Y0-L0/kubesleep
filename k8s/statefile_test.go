@@ -7,8 +7,8 @@ import (
 )
 
 var TEST_SUSPENDABLES = map[string]kubesleep.Suspendable{
-	"StatefulSettest-deployment": kubesleep.NewSuspendable(
-		"StatefulSet",
+	"1:test-deployment": kubesleep.NewSuspendable(
+		kubesleep.StatefulSet,
 		"test-deployment",
 		int32(2),
 		nil,

@@ -71,11 +71,11 @@ func (s *Integrationtest) TestGetDeployment() {
 	s.Require().NotEmpty(sus)
 
 	// simplify for easier comparison
-	actual := sus["Deploymenttest-deployment"]
+	actual := sus["0:test-deployment"]
 	actual.Suspend = nil
 	s.Require().Equal(
 		kubesleep.NewSuspendable(
-			"Deployment",
+			kubesleep.Deplyoment,
 			"test-deployment",
 			int32(2),
 			nil,
@@ -96,15 +96,15 @@ func (s *Integrationtest) TestSuspendDeployment() {
 	sus, err := s.k8s.GetDeployments("suspend-deployments")
 	s.Require().NoError(err)
 	s.Require().NotEmpty(sus)
-	s.Require().Equal(int32(2), sus["Deploymenttest-deployment"].Replicas)
+	s.Require().Equal(int32(2), sus["0:test-deployment"].Replicas)
 
-	err = sus["Deploymenttest-deployment"].Suspend()
+	err = sus["0:test-deployment"].Suspend()
 	s.Require().NoError(err)
 
 	sus, err = s.k8s.GetDeployments("suspend-deployments")
 	s.Require().NoError(err)
 	s.Require().NotEmpty(sus)
-	s.Require().Equal(int32(0), sus["Deploymenttest-deployment"].Replicas)
+	s.Require().Equal(int32(0), sus["0:test-deployment"].Replicas)
 }
 
 func (s *Integrationtest) TestScaleDeployment() {
@@ -121,5 +121,5 @@ func (s *Integrationtest) TestScaleDeployment() {
 	sus, err := s.k8s.GetDeployments("scale-deployments")
 	s.Require().NoError(err)
 	s.Require().NotEmpty(sus)
-	s.Require().Equal(int32(2), sus["Deploymenttest-deployment"].Replicas)
+	s.Require().Equal(int32(2), sus["0:test-deployment"].Replicas)
 }
