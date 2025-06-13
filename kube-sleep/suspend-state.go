@@ -11,44 +11,44 @@ type suspendStateFileDto struct {
 	Finished     *bool                     `json:"finished"`
 }
 
-type suspendStateFile struct {
-	suspendables map[string]suspendable
+type SuspendStateFile struct {
+	suspendables map[string]Suspendable
 	finished     bool
 }
 
-func newSuspendStateFile(suspendables map[string]suspendable) suspendStateFile {
-	return suspendStateFile{
+func NewSuspendStateFile(suspendables map[string]Suspendable, finished bool) SuspendStateFile {
+	return SuspendStateFile{
 		suspendables: suspendables,
 		finished:     false,
 	}
 }
 
-func newSuspendStateFileFromJson(data string) *suspendStateFile {
+func NewSuspendStateFileFromJson(data string) *SuspendStateFile {
 	var stateFileDto suspendStateFileDto
 	err := json.Unmarshal(
 		[]byte(data),
 		&stateFileDto,
 	)
 	if err != nil {
-		panic(fmt.Errorf("failed to unmarshall JSON into suspendStateFile struct. %w", err))
+		panic(fmt.Errorf("failed to unmarshall JSON into SuspendStateFile struct. %w", err))
 	}
 	if stateFileDto.Suspendables == nil || stateFileDto.Finished == nil {
-		panic(fmt.Errorf("Missing field in state file json string. json: %s, stateFileDto: %+v", data, stateFileDto))
+		panic(fmt.Errorf("missing field in state file json string. json: %s, stateFileDto: %+v", data, stateFileDto))
 	}
 
-	suspendables := map[string]suspendable{}
+	suspendables := map[string]Suspendable{}
 	for i, s := range stateFileDto.Suspendables {
 		suspendables[i] = s.fromDto()
 	}
-	stateFile := suspendStateFile{
+	stateFile := SuspendStateFile{
 		suspendables: suspendables,
 		finished:     *stateFileDto.Finished,
 	}
-	slog.Debug("Read state file from json", "json", data, "suspendStateFile", stateFile)
+	slog.Debug("Read state file from json", "json", data, "SuspendStateFile", stateFile)
 	return &stateFile
 }
 
-func (s suspendStateFile) toJson() string {
+func (s SuspendStateFile) ToJson() string {
 	suspendables := map[string]suspendableDto{}
 	for i, s := range s.suspendables {
 		suspendables[i] = s.toDto()

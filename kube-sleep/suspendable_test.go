@@ -1,9 +1,9 @@
 package kubesleep
 
-var TEST_SUSPENDABLES = map[string]suspendable{
-	"Deploymenttest-deployment": suspendable{
+var TEST_SUSPENDABLES = map[string]Suspendable{
+	"Deploymenttest-deployment": Suspendable{
 		manifestType: "Deployment",
 		name:         "test-deployment",
-		replicas:     int32(2),
+		Replicas:     int32(2),
 	},
 }

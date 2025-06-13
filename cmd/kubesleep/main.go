@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 
+	k8s "github.com/Y0-L0/kubesleep/k8s"
 	kubesleep "github.com/Y0-L0/kubesleep/kube-sleep"
 )
 
@@ -19,7 +20,7 @@ func setupLogging(logLevel slog.Level) {
 
 func main() {
 	setupLogging(slog.LevelDebug)
-	err := kubesleep.Main(os.Args)
+	err := kubesleep.Main(os.Args, k8s.NewK8S)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 	}

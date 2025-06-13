@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewParser(args []string, k8sFactory func() (*K8Simpl, error)) *cobra.Command {
+func NewParser(args []string, k8sFactory func() (K8S, error)) *cobra.Command {
 	slog.Debug("raw cli arguments", "args", args)
 
 	config := &cliConfig{}
@@ -64,8 +64,8 @@ func NewParser(args []string, k8sFactory func() (*K8Simpl, error)) *cobra.Comman
 	return rootCmd
 }
 
-func Main(args []string) error {
-	config := NewParser(args, NewK8simpl)
+func Main(args []string, k8sFactory func() (K8S, error)) error {
+	config := NewParser(args, k8sFactory)
 
 	err := config.Execute()
 	if err != nil {

@@ -2,37 +2,47 @@ package kubesleep
 
 import "fmt"
 
-type suspendable struct {
+type Suspendable struct {
 	manifestType string
 	name         string
-	replicas     int32
-	suspend      func() error
+	Replicas     int32
+	Suspend      func() error
 }
 
-func (s suspendable) Identifier() string {
+func NewSuspendable(manifestType string, name string, Replicas int32, suspend func() error) Suspendable {
+	return Suspendable{
+		manifestType: manifestType,
+		name:         name,
+		Replicas:     Replicas,
+		Suspend:      suspend,
+	}
+}
+
+func (s Suspendable) Identifier() string {
 	return s.manifestType + s.name
 }
 
-func (s suspendable) wake(namespace string, k8s *K8Simpl) error {
-	if s.manifestType == "StatefulSet" {
-		if err := k8s.scaleStatefulSet(namespace, s.name, s.replicas); err != nil {
+func (s Suspendable) wake(namespace string, k8s K8S) error {
+	switch s.manifestType {
+	case "StatefulSet":
+		if err := k8s.ScaleStatefulSet(namespace, s.name, s.Replicas); err != nil {
 			return err
 		}
-	} else if s.manifestType == "Deployment" {
-		if err := k8s.scaleDeployment(namespace, s.name, s.replicas); err != nil {
+	case "Deployment":
+		if err := k8s.ScaleDeployment(namespace, s.name, s.Replicas); err != nil {
 			return err
 		}
-	} else {
-		return fmt.Errorf("suspendable: %s with invalid namifestType: %s", s.name, s.manifestType)
+	default:
+		return fmt.Errorf("Suspendable: %s with invalid namifestType: %s", s.name, s.manifestType)
 	}
 	return nil
 }
 
-func (s suspendable) toDto() suspendableDto {
+func (s Suspendable) toDto() suspendableDto {
 	return suspendableDto{
 		ManifestType: s.manifestType,
 		Name:         s.name,
-		Replicas:     s.replicas,
+		Replicas:     s.Replicas,
 	}
 }
 
@@ -42,10 +52,10 @@ type suspendableDto struct {
 	Replicas     int32
 }
 
-func (s suspendableDto) fromDto() suspendable {
-	return suspendable{
+func (s suspendableDto) fromDto() Suspendable {
+	return Suspendable{
 		manifestType: s.ManifestType,
 		name:         s.Name,
-		replicas:     s.Replicas,
+		Replicas:     s.Replicas,
 	}
 }

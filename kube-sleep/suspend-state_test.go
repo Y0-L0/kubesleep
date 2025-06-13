@@ -1,6 +1,6 @@
 package kubesleep
 
-var TEST_SUSPEND_STATE_FILE = suspendStateFile{
+var TEST_SUSPEND_STATE_FILE = SuspendStateFile{
 	suspendables: TEST_SUSPENDABLES,
 	finished:     false,
 }
@@ -17,11 +17,11 @@ const TEST_SUSPEND_STATE_FILE_JSON = `{
 }`
 
 func (s *Unittest) TestSerializeStatefile() {
-	json := TEST_SUSPEND_STATE_FILE.toJson()
+	json := TEST_SUSPEND_STATE_FILE.ToJson()
 	s.Require().Equal(TEST_SUSPEND_STATE_FILE_JSON, json)
 }
 
 func (s *Unittest) TestDeserializeStatefile() {
-	stateFile := newSuspendStateFileFromJson(TEST_SUSPEND_STATE_FILE_JSON)
+	stateFile := NewSuspendStateFileFromJson(TEST_SUSPEND_STATE_FILE_JSON)
 	s.Require().Equal(&TEST_SUSPEND_STATE_FILE, stateFile)
 }

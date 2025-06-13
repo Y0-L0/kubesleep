@@ -1,13 +1,14 @@
-package kubesleep
+package k8s
 
 import (
 	"log/slog"
 
+	kubesleep "github.com/Y0-L0/kubesleep/kube-sleep"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (k8s K8Simpl) getDeployments(namespace string) (map[string]suspendable, error) {
+func (k8s K8Simpl) GetDeployments(namespace string) (map[string]kubesleep.Suspendable, error) {
 	deployments, err := k8s.clientset.AppsV1().
 		Deployments(namespace).
 		List(k8s.ctx, metav1.ListOptions{})
@@ -15,20 +16,20 @@ func (k8s K8Simpl) getDeployments(namespace string) (map[string]suspendable, err
 		return nil, err
 	}
 
-	suspendables := map[string]suspendable{}
+	suspendables := map[string]kubesleep.Suspendable{}
 
 	for _, deployment := range deployments.Items {
 		suspend := func() error {
 			return k8s.suspendDeployment(&deployment)
 		}
 
-		s := suspendable{
-			manifestType: "Deployment",
-			name:         deployment.ObjectMeta.Name,
-			replicas:     *deployment.Spec.Replicas,
-			suspend:      suspend,
-		}
-		slog.Debug("parsed suspendable", "suspendable", s)
+		s := kubesleep.NewSuspendable(
+			"Deployment",
+			deployment.ObjectMeta.Name,
+			*deployment.Spec.Replicas,
+			suspend,
+		)
+		slog.Debug("parsed Suspendable", "Suspendable", s)
 		suspendables[s.Identifier()] = s
 	}
 
@@ -36,8 +37,8 @@ func (k8s K8Simpl) getDeployments(namespace string) (map[string]suspendable, err
 }
 
 func (k8s K8Simpl) suspendDeployment(deployment *appsv1.Deployment) error {
-	replicas := int32(0)
-	deployment.Spec.Replicas = &replicas
+	Replicas := int32(0)
+	deployment.Spec.Replicas = &Replicas
 	_, err := k8s.clientset.AppsV1().Deployments(deployment.Namespace).Update(
 		k8s.ctx,
 		deployment,
@@ -50,7 +51,7 @@ func (k8s K8Simpl) suspendDeployment(deployment *appsv1.Deployment) error {
 	return nil
 }
 
-func (k8s K8Simpl) scaleDeployment(namespace string, name string, replicas int32) error {
+func (k8s K8Simpl) ScaleDeployment(namespace string, name string, Replicas int32) error {
 	deployment, err := k8s.clientset.AppsV1().Deployments(namespace).Get(
 		k8s.ctx,
 		name,
@@ -59,7 +60,7 @@ func (k8s K8Simpl) scaleDeployment(namespace string, name string, replicas int32
 	if err != nil {
 		return err
 	}
-	deployment.Spec.Replicas = &replicas
+	deployment.Spec.Replicas = &Replicas
 
 	_, err = k8s.clientset.AppsV1().Deployments(deployment.Namespace).Update(
 		k8s.ctx,

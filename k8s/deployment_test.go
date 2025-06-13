@@ -1,12 +1,13 @@
-package kubesleep
+package k8s
 
 import (
+	kubesleep "github.com/Y0-L0/kubesleep/kube-sleep"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func createDeployment(k8s K8Simpl, namespace string, name string, replicas int32) (func() error, error) {
+func CreateDeployment(k8s K8Simpl, namespace string, name string, Replicas int32) (func() error, error) {
 	labels := map[string]string{"app": name}
 
 	deployment := &appsv1.Deployment{
@@ -15,7 +16,7 @@ func createDeployment(k8s K8Simpl, namespace string, name string, replicas int32
 			Namespace: namespace,
 		},
 		Spec: appsv1.DeploymentSpec{
-			Replicas: &replicas,
+			Replicas: &Replicas,
 			Selector: &metav1.LabelSelector{
 				MatchLabels: labels,
 			},
@@ -51,7 +52,7 @@ func (s *Integrationtest) TestCreateDeleteDeployment() {
 	s.Require().NoError(err)
 	defer deleteNamespace()
 
-	delete, err := createDeployment(*s.k8s, "create-delete-deployment", "test-deployment", int32(2))
+	delete, err := CreateDeployment(*s.k8s, "create-delete-deployment", "test-deployment", int32(2))
 	s.Require().NoError(err)
 	defer delete()
 }
@@ -61,23 +62,24 @@ func (s *Integrationtest) TestGetDeployment() {
 	s.Require().NoError(err)
 	defer deleteNamespace()
 
-	delete, err := createDeployment(*s.k8s, "get-deployments", "test-deployment", int32(2))
+	delete, err := CreateDeployment(*s.k8s, "get-deployments", "test-deployment", int32(2))
 	s.Require().NoError(err)
 	defer delete()
 
-	sus, err := s.k8s.getDeployments("get-deployments")
+	sus, err := s.k8s.GetDeployments("get-deployments")
 	s.Require().NoError(err)
 	s.Require().NotEmpty(sus)
 
 	// simplify for easier comparison
 	actual := sus["Deploymenttest-deployment"]
-	actual.suspend = nil
+	actual.Suspend = nil
 	s.Require().Equal(
-		suspendable{
-			manifestType: "Deployment",
-			name:         "test-deployment",
-			replicas:     int32(2),
-		},
+		kubesleep.NewSuspendable(
+			"Deployment",
+			"test-deployment",
+			int32(2),
+			nil,
+		),
 		actual,
 	)
 }
@@ -87,22 +89,22 @@ func (s *Integrationtest) TestSuspendDeployment() {
 	s.Require().NoError(err)
 	defer deleteNamespace()
 
-	delete, err := createDeployment(*s.k8s, "suspend-deployments", "test-deployment", int32(2))
+	delete, err := CreateDeployment(*s.k8s, "suspend-deployments", "test-deployment", int32(2))
 	s.Require().NoError(err)
 	defer delete()
 
-	sus, err := s.k8s.getDeployments("suspend-deployments")
+	sus, err := s.k8s.GetDeployments("suspend-deployments")
 	s.Require().NoError(err)
 	s.Require().NotEmpty(sus)
-	s.Require().Equal(int32(2), sus["Deploymenttest-deployment"].replicas)
+	s.Require().Equal(int32(2), sus["Deploymenttest-deployment"].Replicas)
 
-	err = sus["Deploymenttest-deployment"].suspend()
+	err = sus["Deploymenttest-deployment"].Suspend()
 	s.Require().NoError(err)
 
-	sus, err = s.k8s.getDeployments("suspend-deployments")
+	sus, err = s.k8s.GetDeployments("suspend-deployments")
 	s.Require().NoError(err)
 	s.Require().NotEmpty(sus)
-	s.Require().Equal(int32(0), sus["Deploymenttest-deployment"].replicas)
+	s.Require().Equal(int32(0), sus["Deploymenttest-deployment"].Replicas)
 }
 
 func (s *Integrationtest) TestScaleDeployment() {
@@ -110,14 +112,14 @@ func (s *Integrationtest) TestScaleDeployment() {
 	s.Require().NoError(err)
 	defer deleteNamespace()
 
-	delete, err := createDeployment(*s.k8s, "scale-deployments", "test-deployment", int32(0))
+	delete, err := CreateDeployment(*s.k8s, "scale-deployments", "test-deployment", int32(0))
 	s.Require().NoError(err)
 	defer delete()
 
-	err = s.k8s.scaleDeployment("scale-deployments", "test-deployment", int32(2))
+	err = s.k8s.ScaleDeployment("scale-deployments", "test-deployment", int32(2))
 
-	sus, err := s.k8s.getDeployments("scale-deployments")
+	sus, err := s.k8s.GetDeployments("scale-deployments")
 	s.Require().NoError(err)
 	s.Require().NotEmpty(sus)
-	s.Require().Equal(int32(2), sus["Deploymenttest-deployment"].replicas)
+	s.Require().Equal(int32(2), sus["Deploymenttest-deployment"].Replicas)
 }

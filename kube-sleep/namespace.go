@@ -2,10 +2,10 @@ package kubesleep
 
 import "maps"
 
-type suspendableNamespace interface {
-	suspendable() bool
-	suspend(*K8Simpl) error
-	wake(*K8Simpl) error
+type SuspendableNamespace interface {
+	Suspendable() bool
+	suspend(K8S) error
+	wake(K8S) error
 }
 
 type suspendableNamespaceImpl struct {
@@ -13,12 +13,19 @@ type suspendableNamespaceImpl struct {
 	_suspendable bool
 }
 
-func (n *suspendableNamespaceImpl) suspendable() bool {
+func NewSuspendableNamespace(name string, suspendable bool) SuspendableNamespace {
+	return &suspendableNamespaceImpl{
+		name:         name,
+		_suspendable: suspendable,
+	}
+}
+
+func (n *suspendableNamespaceImpl) Suspendable() bool {
 	return n._suspendable
 }
 
-func (n *suspendableNamespaceImpl) wake(k8s *K8Simpl) error {
-	stateFile, err := k8s.getStateFile(n.name)
+func (n *suspendableNamespaceImpl) wake(k8s K8S) error {
+	stateFile, err := k8s.GetStateFile(n.name)
 	if err != nil {
 		return err
 	}
@@ -33,35 +40,35 @@ func (n *suspendableNamespaceImpl) wake(k8s *K8Simpl) error {
 	return nil
 }
 
-func (n *suspendableNamespaceImpl) suspend(k8s *K8Simpl) error {
-	suspendables, err := k8s.getDeployments(n.name)
+func (n *suspendableNamespaceImpl) suspend(k8s K8S) error {
+	suspendables, err := k8s.GetDeployments(n.name)
 	if err != nil {
 		return err
 	}
-	sus, err := k8s.getStatefulSets(n.name)
+	sus, err := k8s.GetStatefulSets(n.name)
 	if err != nil {
 		return err
 	}
 	maps.Copy(suspendables, sus)
 
-	stateFile := &suspendStateFile{
+	stateFile := &SuspendStateFile{
 		suspendables: suspendables,
 		finished:     false,
 	}
-	stateFile, err = k8s.createStateFile(n.name, stateFile)
+	stateFile, err = k8s.CreateStateFile(n.name, stateFile)
 	if err != nil {
 		return err
 	}
 
 	for _, sus := range suspendables {
-		err = sus.suspend()
+		err = sus.Suspend()
 		if err != nil {
 			return err
 		}
 	}
 
 	stateFile.finished = true
-	stateFile, err = k8s.updateStateFile(n.name, stateFile)
+	stateFile, err = k8s.UpdateStateFile(n.name, stateFile)
 	if err != nil {
 		return err
 	}

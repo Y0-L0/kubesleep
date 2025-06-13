@@ -1,13 +1,14 @@
-package kubesleep
+package k8s
 
 import (
 	"log/slog"
 
+	kubesleep "github.com/Y0-L0/kubesleep/kube-sleep"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (k8s K8Simpl) getStatefulSets(namespace string) (map[string]suspendable, error) {
+func (k8s K8Simpl) GetStatefulSets(namespace string) (map[string]kubesleep.Suspendable, error) {
 	statefulSets, err := k8s.clientset.AppsV1().
 		StatefulSets(namespace).
 		List(k8s.ctx, metav1.ListOptions{})
@@ -22,13 +23,13 @@ func (k8s K8Simpl) getStatefulSets(namespace string) (map[string]suspendable, er
 			return k8s.suspendStatefulSet(&statefulSet)
 		}
 
-		s := suspendable{
-			manifestType: "StatefulSet",
-			name:         statefulSet.ObjectMeta.Name,
-			replicas:     *statefulSet.Spec.Replicas,
-			suspend:      suspend,
-		}
-		slog.Debug("parsed suspendable", "suspendable", s)
+		s := kubesleep.NewSuspendable(
+			"StatefulSet",
+			statefulSet.ObjectMeta.Name,
+			*statefulSet.Spec.Replicas,
+			suspend,
+		)
+		slog.Debug("parsed Suspendable", "Suspendable", s)
 		suspendables[s.Identifier()] = s
 	}
 
@@ -36,8 +37,8 @@ func (k8s K8Simpl) getStatefulSets(namespace string) (map[string]suspendable, er
 }
 
 func (k8s K8Simpl) suspendStatefulSet(statefulSet *appsv1.StatefulSet) error {
-	replicas := int32(0)
-	statefulSet.Spec.Replicas = &replicas
+	Replicas := int32(0)
+	statefulSet.Spec.Replicas = &Replicas
 	_, err := k8s.clientset.AppsV1().StatefulSets(statefulSet.Namespace).Update(
 		k8s.ctx,
 		statefulSet,
@@ -50,7 +51,7 @@ func (k8s K8Simpl) suspendStatefulSet(statefulSet *appsv1.StatefulSet) error {
 	return nil
 }
 
-func (k8s K8Simpl) scaleStatefulSet(namespace string, name string, replicas int32) error {
+func (k8s K8Simpl) ScaleStatefulSet(namespace string, name string, Replicas int32) error {
 	statefulSet, err := k8s.clientset.AppsV1().StatefulSets(namespace).Get(
 		k8s.ctx,
 		name,
@@ -59,7 +60,7 @@ func (k8s K8Simpl) scaleStatefulSet(namespace string, name string, replicas int3
 	if err != nil {
 		return err
 	}
-	statefulSet.Spec.Replicas = &replicas
+	statefulSet.Spec.Replicas = &Replicas
 
 	_, err = k8s.clientset.AppsV1().StatefulSets(statefulSet.Namespace).Update(
 		k8s.ctx,

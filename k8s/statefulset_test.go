@@ -1,12 +1,16 @@
-package kubesleep
+package k8s
 
 import (
+	"maps"
+	"slices"
+
+	kubesleep "github.com/Y0-L0/kubesleep/kube-sleep"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func createStatefulSet(k8s K8Simpl, namespace string, name string, replicas int32) (func() error, error) {
+func CreateStatefulSet(k8s K8Simpl, namespace string, name string, Replicas int32) (func() error, error) {
 	labels := map[string]string{"app": name}
 
 	statefulset := &appsv1.StatefulSet{
@@ -15,7 +19,7 @@ func createStatefulSet(k8s K8Simpl, namespace string, name string, replicas int3
 			Namespace: namespace,
 		},
 		Spec: appsv1.StatefulSetSpec{
-			Replicas: &replicas,
+			Replicas: &Replicas,
 			Selector: &metav1.LabelSelector{
 				MatchLabels: labels,
 			},
@@ -51,7 +55,7 @@ func (s *Integrationtest) TestCreateDeleteStatefulSet() {
 	s.Require().NoError(err)
 	defer deleteNamespace()
 
-	delete, err := createStatefulSet(*s.k8s, "create-delete-statefulset", "test-statefulset", int32(2))
+	delete, err := CreateStatefulSet(*s.k8s, "create-delete-statefulset", "test-statefulset", int32(2))
 	s.Require().NoError(err)
 	defer delete()
 }
@@ -61,23 +65,25 @@ func (s *Integrationtest) TestGetStatefulSet() {
 	s.Require().NoError(err)
 	defer deleteNamespace()
 
-	delete, err := createStatefulSet(*s.k8s, "get-statefulsets", "test-statefulset", int32(2))
+	delete, err := CreateStatefulSet(*s.k8s, "get-statefulsets", "test-statefulset", int32(2))
 	s.Require().NoError(err)
 	defer delete()
 
-	sus, err := s.k8s.getStatefulSets("get-statefulsets")
+	sus, err := s.k8s.GetStatefulSets("get-statefulsets")
 	s.Require().NoError(err)
-	s.Require().NotEmpty(sus)
+
+	s.Require().Equal([]string{"StatefulSettest-statefulset"}, slices.Collect(maps.Keys(sus)))
 
 	// simplify for easier comparison
 	actual := sus["StatefulSettest-statefulset"]
 	actual.suspend = nil
 	s.Require().Equal(
-		suspendable{
-			manifestType: "StatefulSet",
-			name:         "test-statefulset",
-			replicas:     int32(2),
-		},
+		kubesleep.NewSuspendable(
+			"StatefulSet",
+			"test-statefulset",
+			int32(2),
+			nil,
+		),
 		actual,
 	)
 }
@@ -87,22 +93,22 @@ func (s *Integrationtest) TestSuspendStatefulSet() {
 	s.Require().NoError(err)
 	defer deleteNamespace()
 
-	delete, err := createStatefulSet(*s.k8s, "suspend-statefulsets", "test-statefulset", int32(2))
+	delete, err := CreateStatefulSet(*s.k8s, "suspend-statefulsets", "test-statefulset", int32(2))
 	s.Require().NoError(err)
 	defer delete()
 
-	sus, err := s.k8s.getStatefulSets("suspend-statefulsets")
+	sus, err := s.k8s.GetStatefulSets("suspend-statefulsets")
 	s.Require().NoError(err)
 	s.Require().NotEmpty(sus)
-	s.Require().Equal(int32(2), sus["StatefulSettest-statefulset"].replicas)
+	s.Require().Equal(int32(2), sus["StatefulSettest-statefulset"].Replicas)
 
-	err = sus["StatefulSettest-statefulset"].suspend()
+	err = sus["StatefulSettest-statefulset"].Suspend()
 	s.Require().NoError(err)
 
-	sus, err = s.k8s.getStatefulSets("suspend-statefulsets")
+	sus, err = s.k8s.GetStatefulSets("suspend-statefulsets")
 	s.Require().NoError(err)
 	s.Require().NotEmpty(sus)
-	s.Require().Equal(int32(0), sus["StatefulSettest-statefulset"].replicas)
+	s.Require().Equal(int32(0), sus["StatefulSettest-statefulset"].Replicas)
 }
 
 func (s *Integrationtest) TestScaleStatefulSet() {
@@ -110,14 +116,14 @@ func (s *Integrationtest) TestScaleStatefulSet() {
 	s.Require().NoError(err)
 	defer deleteNamespace()
 
-	delete, err := createStatefulSet(*s.k8s, "scale-statefulsets", "test-statefulset", int32(0))
+	delete, err := CreateStatefulSet(*s.k8s, "scale-statefulsets", "test-statefulset", int32(0))
 	s.Require().NoError(err)
 	defer delete()
 
-	err = s.k8s.scaleStatefulSet("scale-statefulsets", "test-statefulset", int32(2))
+	err = s.k8s.ScaleStatefulSet("scale-statefulsets", "test-statefulset", int32(2))
 
-	sus, err := s.k8s.getStatefulSets("scale-statefulsets")
+	sus, err := s.k8s.GetStatefulSets("scale-statefulsets")
 	s.Require().NoError(err)
 	s.Require().NotEmpty(sus)
-	s.Require().Equal(int32(2), sus["StatefulSettest-statefulset"].replicas)
+	s.Require().Equal(int32(2), sus["StatefulSettest-statefulset"].Replicas)
 }

@@ -1,9 +1,10 @@
-package kubesleep
+package k8s
 
 import (
 	"context"
 	"log/slog"
 
+	kubesleep "github.com/Y0-L0/kubesleep/kube-sleep"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -15,7 +16,7 @@ type K8Simpl struct {
 	cancel    context.CancelFunc
 }
 
-func NewK8simpl() (*K8Simpl, error) {
+func NewK8S() (kubesleep.K8S, error) {
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
 		clientcmd.NewDefaultClientConfigLoadingRules(),
 		&clientcmd.ConfigOverrides{},
@@ -36,24 +37,25 @@ func NewK8simpl() (*K8Simpl, error) {
 	return k8s, nil
 }
 
-func (k8s K8Simpl) suspendableNamespace(namespace string) (suspendableNamespace, error) {
+func (k8s K8Simpl) GetSuspendableNamespace(namespace string) (kubesleep.SuspendableNamespace, error) {
 	kubernetesNamespace, err := k8s.clientset.CoreV1().Namespaces().Get(k8s.ctx, namespace, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	namespaceObj := suspendableNamespaceImpl{
-		name:         namespace,
-		_suspendable: true,
-	}
+	suspendable := false
 	if kubernetesNamespace.ObjectMeta.Annotations != nil {
 		_, found := kubernetesNamespace.ObjectMeta.Annotations["kubesleep.xyz/do-not-suspend"]
-		namespaceObj._suspendable = !found
+		suspendable = !found
 	} else {
-		slog.Debug("Namespace has no annotations")
+		slog.Debug("Namespace has no relevant annotations")
 	}
 
 	slog.Debug("namespace manifest", "kubernetesNamespace", kubernetesNamespace)
+	namespaceObj := kubesleep.NewSuspendableNamespace(
+		namespace,
+		suspendable,
+	)
 	slog.Info("parsed namespace", "namespace", namespaceObj)
-	return &namespaceObj, err
+	return namespaceObj, err
 }

@@ -1,18 +1,29 @@
-package kubesleep
+package k8s
 
 import (
 	"log/slog"
+
+	kubesleep "github.com/Y0-L0/kubesleep/kube-sleep"
 )
+
+var TEST_SUSPENDABLES = map[string]kubesleep.Suspendable{
+	"StatefulSettest-deployment": kubesleep.NewSuspendable(
+		"StatefulSet",
+		"test-deployment",
+		int32(2),
+		nil,
+	),
+}
 
 func (s *Integrationtest) TestCreateDeleteStatefile() {
 	deleteNamespace, err := testNamespace("create-delete-statefile", s.k8s)
 	s.Require().NoError(err)
 	defer deleteNamespace()
 
-	_, err = s.k8s.createStateFile("create-delete-statefile", &suspendStateFile{})
+	_, err = s.k8s.CreateStateFile("create-delete-statefile", &kubesleep.SuspendStateFile{})
 	s.Require().NoError(err)
 
-	err = s.k8s.deleteStateFile("create-delete-statefile")
+	err = s.k8s.DeleteStateFile("create-delete-statefile")
 	s.Require().NoError(err)
 }
 
@@ -21,20 +32,26 @@ func (s *Integrationtest) TestUpdateStatefile() {
 	s.Require().NoError(err)
 	defer deleteNamespace()
 
-	_, err = s.k8s.createStateFile("update-statefile", &suspendStateFile{
-		suspendables: map[string]suspendable{},
-		finished:     false,
-	})
+	stateFile := kubesleep.NewSuspendStateFile(
+		map[string]kubesleep.Suspendable{},
+		true,
+	)
+	_, err = s.k8s.CreateStateFile("update-statefile", &stateFile)
 	s.Require().NoError(err)
-	defer s.k8s.deleteStateFile("update-statefile")
+	defer s.k8s.DeleteStateFile("update-statefile")
 
-	_, err = s.k8s.updateStateFile("update-statefile", &suspendStateFile{
-		suspendables: TEST_SUSPENDABLES,
-		finished:     true,
-	})
+	stateFile = kubesleep.NewSuspendStateFile(
+		TEST_SUSPENDABLES,
+		true,
+	)
+	_, err = s.k8s.UpdateStateFile("update-statefile", &stateFile)
 
-	stateFile, err := s.k8s.getStateFile("update-statefile")
+	actualStateFile, err := s.k8s.GetStateFile("update-statefile")
 	slog.Debug("Read updated state file from cluster", "stateFile", stateFile)
-	s.Require().True(stateFile.finished)
-	s.Require().Equal(TEST_SUSPENDABLES, stateFile.suspendables)
+
+	expected := kubesleep.NewSuspendStateFile(TEST_SUSPENDABLES, true)
+	s.Require().Equal(
+		&expected,
+		actualStateFile,
+	)
 }
