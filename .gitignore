@@ -34,5 +34,6 @@ go.work.sum
 # Application-specific
 dist-*
 TODO.md
+*/coverage.*
 # Added by goreleaser init:
 dist/

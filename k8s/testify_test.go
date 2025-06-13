@@ -77,10 +77,15 @@ func testCluster() (*K8Simpl, func() error, error) {
 	return k8s, stop, nil
 }
 
-func testNamespace(name string, k8s *K8Simpl) (func() error, error) {
+func testNamespace(name string, k8s *K8Simpl, doNotSuspend bool) (func() error, error) {
+	annotations := map[string]string{}
+	if doNotSuspend {
+		annotations["kubesleep.xyz/do-not-suspend"] = ""
+	}
 	namespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
+			Name:        name,
+			Annotations: annotations,
 		},
 	}
 	namespace, err := k8s.clientset.CoreV1().Namespaces().Create(k8s.ctx, namespace, metav1.CreateOptions{})

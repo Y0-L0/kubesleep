@@ -16,7 +16,7 @@ var TEST_SUSPENDABLES = map[string]kubesleep.Suspendable{
 }
 
 func (s *Integrationtest) TestCreateDeleteStatefile() {
-	deleteNamespace, err := testNamespace("create-delete-statefile", s.k8s)
+	deleteNamespace, err := testNamespace("create-delete-statefile", s.k8s, false)
 	s.Require().NoError(err)
 	defer deleteNamespace()
 
@@ -28,7 +28,7 @@ func (s *Integrationtest) TestCreateDeleteStatefile() {
 }
 
 func (s *Integrationtest) TestUpdateStatefile() {
-	deleteNamespace, err := testNamespace("update-statefile", s.k8s)
+	deleteNamespace, err := testNamespace("update-statefile", s.k8s, false)
 	s.Require().NoError(err)
 	defer deleteNamespace()
 

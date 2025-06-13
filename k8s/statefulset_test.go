@@ -51,7 +51,7 @@ func CreateStatefulSet(k8s K8Simpl, namespace string, name string, Replicas int3
 }
 
 func (s *Integrationtest) TestCreateDeleteStatefulSet() {
-	deleteNamespace, err := testNamespace("create-delete-statefulset", s.k8s)
+	deleteNamespace, err := testNamespace("create-delete-statefulset", s.k8s, false)
 	s.Require().NoError(err)
 	defer deleteNamespace()
 
@@ -61,7 +61,7 @@ func (s *Integrationtest) TestCreateDeleteStatefulSet() {
 }
 
 func (s *Integrationtest) TestGetStatefulSet() {
-	deleteNamespace, err := testNamespace("get-statefulsets", s.k8s)
+	deleteNamespace, err := testNamespace("get-statefulsets", s.k8s, false)
 	s.Require().NoError(err)
 	defer deleteNamespace()
 
@@ -89,7 +89,7 @@ func (s *Integrationtest) TestGetStatefulSet() {
 }
 
 func (s *Integrationtest) TestSuspendStatefulSet() {
-	deleteNamespace, err := testNamespace("suspend-statefulsets", s.k8s)
+	deleteNamespace, err := testNamespace("suspend-statefulsets", s.k8s, false)
 	s.Require().NoError(err)
 	defer deleteNamespace()
 
@@ -112,7 +112,7 @@ func (s *Integrationtest) TestSuspendStatefulSet() {
 }
 
 func (s *Integrationtest) TestScaleStatefulSet() {
-	deleteNamespace, err := testNamespace("scale-statefulsets", s.k8s)
+	deleteNamespace, err := testNamespace("scale-statefulsets", s.k8s, false)
 	s.Require().NoError(err)
 	defer deleteNamespace()
 

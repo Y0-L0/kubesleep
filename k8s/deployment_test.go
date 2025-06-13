@@ -48,7 +48,7 @@ func CreateDeployment(k8s K8Simpl, namespace string, name string, Replicas int32
 }
 
 func (s *Integrationtest) TestCreateDeleteDeployment() {
-	deleteNamespace, err := testNamespace("create-delete-deployment", s.k8s)
+	deleteNamespace, err := testNamespace("create-delete-deployment", s.k8s, false)
 	s.Require().NoError(err)
 	defer deleteNamespace()
 
@@ -58,7 +58,7 @@ func (s *Integrationtest) TestCreateDeleteDeployment() {
 }
 
 func (s *Integrationtest) TestGetDeployment() {
-	deleteNamespace, err := testNamespace("get-deployments", s.k8s)
+	deleteNamespace, err := testNamespace("get-deployments", s.k8s, false)
 	s.Require().NoError(err)
 	defer deleteNamespace()
 
@@ -85,7 +85,7 @@ func (s *Integrationtest) TestGetDeployment() {
 }
 
 func (s *Integrationtest) TestSuspendDeployment() {
-	deleteNamespace, err := testNamespace("suspend-deployments", s.k8s)
+	deleteNamespace, err := testNamespace("suspend-deployments", s.k8s, false)
 	s.Require().NoError(err)
 	defer deleteNamespace()
 
@@ -108,7 +108,7 @@ func (s *Integrationtest) TestSuspendDeployment() {
 }
 
 func (s *Integrationtest) TestScaleDeployment() {
-	deleteNamespace, err := testNamespace("scale-deployments", s.k8s)
+	deleteNamespace, err := testNamespace("scale-deployments", s.k8s, false)
 	s.Require().NoError(err)
 	defer deleteNamespace()
 

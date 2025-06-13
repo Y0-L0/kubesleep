@@ -68,7 +68,7 @@ func (n *suspendableNamespaceImpl) suspend(k8s K8S) error {
 	}
 
 	stateFile.finished = true
-	stateFile, err = k8s.UpdateStateFile(n.name, stateFile)
+	_, err = k8s.UpdateStateFile(n.name, stateFile)
 	if err != nil {
 		return err
 	}
