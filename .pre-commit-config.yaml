@@ -1,0 +1,17 @@
+repos:
+  - repo: local
+    hooks:
+      - id: go-fmt
+        name: go fmt
+        entry: go fmt ./...
+        language: system
+        pass_filenames: false
+        files: \.go$
+
+      - id: go-test
+        name: go test with kubebuilder assets
+        entry: bash -c 'KUBEBUILDER_ASSETS=~/.local/share/kubebuilder-envtest/k8s/1.33.0-linux-amd64/ go test ./...'
+        language: system
+        pass_filenames: false
+        files: \.go$
+
