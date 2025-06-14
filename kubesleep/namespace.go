@@ -1,6 +1,9 @@
 package kubesleep
 
-import "maps"
+import (
+	"fmt"
+	"maps"
+)
 
 type SuspendableNamespace interface {
 	Suspendable() bool
@@ -28,6 +31,10 @@ func (n *suspendableNamespaceImpl) wake(k8s K8S) error {
 	stateFile, err := k8s.GetStateFile(n.name)
 	if err != nil {
 		return err
+	}
+
+	if !stateFile.finished {
+		return fmt.Errorf("cannot wake the namespace %s because the namespace is partially suspended. Please first resume / retry the suspend operation", n.name)
 	}
 
 	for _, s := range stateFile.suspendables {
