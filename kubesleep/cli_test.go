@@ -1,5 +1,7 @@
 package kubesleep
 
+import "github.com/stretchr/testify/mock"
+
 func (s *Unittest) TestMainHelp() {
 	err := Main([]string{"kubesleep", "--help"}, nil)
 	s.Require().NoError(err)
@@ -45,10 +47,16 @@ func (s *Unittest) TestValidCliArguments() {
 
 	for _, testCase := range tests {
 		s.Run(testCase.name, func() {
-			command, config := newParser(testCase.args, mockK8SFactory)
+			k8s, factory := NewMockK8S()
+			k8s.On("GetSuspendableNamespace", mock.Anything).Return(&suspendableNamespaceImpl{}, errExpected)
 
+			command, config := newParser(
+				testCase.args,
+				factory,
+			)
 			err := command.Execute()
-			s.Require().Equal(mockK8SError, err)
+			s.Require().Equal(errExpected, err)
+			k8s.AssertExpectations(s.T())
 
 			s.Equal("kubesleep", command.Name())
 			s.Equal(testCase.config, config)

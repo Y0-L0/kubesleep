@@ -14,3 +14,5 @@ type K8S interface {
 	UpdateStateFile(string, *SuspendStateFile) (*SuspendStateFile, error)
 	DeleteStateFile(string) error
 }
+
+type K8SFactory func() (K8S, error)
