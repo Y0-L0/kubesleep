@@ -32,7 +32,7 @@ func NewK8S() (kubesleep.K8S, error) {
 	if err != nil {
 		return nil, err
 	}
-	k8s.ctx, k8s.cancel = context.WithCancel(k8s.ctx)
+	k8s.ctx, k8s.cancel = context.WithCancel(context.TODO())
 
 	return k8s, nil
 }
