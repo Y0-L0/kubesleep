@@ -2,6 +2,20 @@ package kubesleep
 
 import "github.com/stretchr/testify/mock"
 
+type MockStateFileActions struct {
+	mock.Mock
+}
+
+func (m *MockStateFileActions) Update(data *SuspendStateFile) error {
+	args := m.Called(data)
+	return args.Error(0)
+}
+
+func (m *MockStateFileActions) Delete() error {
+	args := m.Called()
+	return args.Error(0)
+}
+
 var TEST_SUSPEND_STATE_FILE = SuspendStateFile{
 	suspendables: TEST_SUSPENDABLES,
 	finished:     false,
@@ -28,16 +42,14 @@ func (s *Unittest) TestDeserializeStatefile() {
 	s.Require().Equal(&TEST_SUSPEND_STATE_FILE, stateFile)
 }
 
-type MockStateFileActions struct {
-	mock.Mock
+func (s *Unittest) TestDeserializeStatefileInvalidJson() {
+	s.Require().Panics(func() {
+		_ = NewSuspendStateFileFromJson("{\"")
+	})
 }
 
-func (m *MockStateFileActions) Update(data *SuspendStateFile) error {
-	args := m.Called(data)
-	return args.Error(0)
-}
-
-func (m *MockStateFileActions) Delete() error {
-	args := m.Called()
-	return args.Error(0)
+func (s *Unittest) TestDeserializeStatefileIncompleteJson() {
+	s.Require().Panics(func() {
+		_ = NewSuspendStateFileFromJson(`{"finished": false}`)
+	})
 }

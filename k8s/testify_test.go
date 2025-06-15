@@ -11,6 +11,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 )
 
@@ -21,6 +22,7 @@ type Integrationtest struct {
 
 	stopCluster func() error
 	k8s         *K8Simpl
+	restconfig  *rest.Config
 }
 
 func (s *Integrationtest) SetupTest() {
@@ -44,7 +46,7 @@ func (s *Integrationtest) TearDownTest() {
 
 func (s *Integrationtest) SetupSuite() {
 	var err error
-	s.k8s, s.stopCluster, err = testCluster()
+	s.k8s, s.restconfig, s.stopCluster, err = testCluster()
 	s.Require().NoError(err)
 }
 
@@ -52,19 +54,19 @@ func (s *Integrationtest) TearDownSuite() {
 	s.stopCluster()
 }
 
-func testCluster() (*K8Simpl, func() error, error) {
+func testCluster() (*K8Simpl, *rest.Config, func() error, error) {
 	k8s := &K8Simpl{}
 
 	slog.Debug("Starting a testing kubernetes control plane")
 	testEnv := &envtest.Environment{}
 	cfg, err := testEnv.Start()
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to start test cluster %w", err)
+		return nil, nil, nil, fmt.Errorf("failed to start test cluster %w", err)
 	}
 
 	k8s.clientset, err = kubernetes.NewForConfig(cfg)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create client config for the test cluster %w", err)
+		return nil, nil, nil, fmt.Errorf("failed to create client config for the test cluster %w", err)
 	}
 
 	k8s.ctx, k8s.cancel = context.WithCancel(context.TODO())
@@ -74,7 +76,7 @@ func testCluster() (*K8Simpl, func() error, error) {
 		return testEnv.Stop()
 	}
 
-	return k8s, stop, nil
+	return k8s, cfg, stop, nil
 }
 
 func testNamespace(name string, k8s *K8Simpl, doNotSuspend bool) (func() error, error) {
