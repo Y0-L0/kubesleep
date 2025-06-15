@@ -1,5 +1,7 @@
 package kubesleep
 
+import "github.com/stretchr/testify/mock"
+
 var brokenK8SFactory = func() (K8S, error) { return nil, errExpected }
 
 func (s *Unittest) TestSuspendBrokenK8SFactory() {
@@ -26,7 +28,22 @@ func (s *Unittest) TestSuspendSkip() {
 	err := cliConfig{namespace: "foo"}.suspend(factory)
 
 	k8s.AssertExpectations(s.T())
-	s.Require().Nil(err)
+	s.Require().NoError(err)
+}
+
+func (s *Unittest) TestSuspendEmptyNamespace() {
+	k8s, factory := NewMockK8S()
+	actions := MockStateFileActions{}
+	k8s.On("GetSuspendableNamespace", "foo").Return(NewSuspendableNamespace("foo", true), nil)
+	k8s.On("GetDeployments", "foo").Return(map[string]Suspendable{}, nil)
+	k8s.On("GetStatefulSets", "foo").Return(map[string]Suspendable{}, nil)
+	k8s.On("CreateStateFile", "foo", mock.Anything).Return(&actions, nil)
+	actions.On("Update", mock.Anything).Return(nil)
+
+	err := cliConfig{namespace: "foo"}.suspend(factory)
+
+	k8s.AssertExpectations(s.T())
+	s.Require().NoError(err)
 }
 
 func (s *Unittest) TestWakeBrokenK8SFactory() {
@@ -62,5 +79,5 @@ func (s *Unittest) TestWakeEmptyNamespace() {
 	err := cliConfig{namespace: "foo"}.wake(factory)
 
 	k8s.AssertExpectations(s.T())
-	s.Require().Nil(err)
+	s.Require().NoError(err)
 }

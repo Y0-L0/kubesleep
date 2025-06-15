@@ -52,14 +52,18 @@ func (s *Unittest) TestNamespaceSuspendCreateStatefileFailed() {
 	s.Require().Equal(errExpected, err)
 }
 
-func (s *Unittest) TestNamespaceSuspendSuccess() {
+func (s *Unittest) TestNamespaceSuspend() {
 	k8s, _ := NewMockK8S()
-	k8s.On("GetDeployments", "foo").Return(map[string]Suspendable{}, nil)
+	actions := MockStateFileActions{}
+	sus := TEST_SUSPENDABLE
+	sus.Suspend = func() error { return nil }
+	k8s.On("GetDeployments", "foo").Return(map[string]Suspendable{sus.Identifier(): sus}, nil)
 	k8s.On("GetStatefulSets", "foo").Return(map[string]Suspendable{}, nil)
-	k8s.On("CreateStateFile", "foo", mock.Anything).Return((*MockStateFileActions)(nil), errExpected)
+	k8s.On("CreateStateFile", "foo", mock.Anything).Return(&actions, nil)
+	actions.On("Update", mock.Anything).Return(nil)
 
 	err := NewSuspendableNamespace("foo", true).suspend(k8s)
 
 	k8s.AssertExpectations(s.T())
-	s.Require().Equal(errExpected, err)
+	s.Require().NoError(err)
 }
