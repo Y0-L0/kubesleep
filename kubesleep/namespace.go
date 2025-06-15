@@ -28,7 +28,7 @@ func (n *suspendableNamespaceImpl) Suspendable() bool {
 }
 
 func (n *suspendableNamespaceImpl) wake(k8s K8S) error {
-	stateFile, err := k8s.GetStateFile(n.name)
+	stateFile, actions, err := k8s.GetStateFile(n.name)
 	if err != nil {
 		return err
 	}
@@ -43,8 +43,7 @@ func (n *suspendableNamespaceImpl) wake(k8s K8S) error {
 			return err
 		}
 	}
-	k8s.DeleteStateFile(n.name)
-	return nil
+	return actions.Delete()
 }
 
 func (n *suspendableNamespaceImpl) suspend(k8s K8S) error {
@@ -62,7 +61,7 @@ func (n *suspendableNamespaceImpl) suspend(k8s K8S) error {
 		suspendables: suspendables,
 		finished:     false,
 	}
-	stateFile, err = k8s.CreateStateFile(n.name, stateFile)
+	actions, err := k8s.CreateStateFile(n.name, stateFile)
 	if err != nil {
 		return err
 	}
@@ -75,10 +74,5 @@ func (n *suspendableNamespaceImpl) suspend(k8s K8S) error {
 	}
 
 	stateFile.finished = true
-	_, err = k8s.UpdateStateFile(n.name, stateFile)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return actions.Update(stateFile)
 }

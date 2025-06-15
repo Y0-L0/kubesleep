@@ -6,6 +6,11 @@ import (
 	"log/slog"
 )
 
+type StateFileActions interface {
+	Update(*SuspendStateFile) error
+	Delete() error
+}
+
 type suspendStateFileDto struct {
 	Suspendables map[string]suspendableDto `json:"suspendables"`
 	Finished     *bool                     `json:"finished"`

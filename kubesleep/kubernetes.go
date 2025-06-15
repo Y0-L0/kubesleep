@@ -9,8 +9,8 @@ type K8S interface {
 	GetStatefulSets(string) (map[string]Suspendable, error)
 	ScaleStatefulSet(string, string, int32) error
 
-	GetStateFile(string) (*SuspendStateFile, error)
-	CreateStateFile(string, *SuspendStateFile) (*SuspendStateFile, error)
+	GetStateFile(string) (*SuspendStateFile, StateFileActions, error)
+	CreateStateFile(string, *SuspendStateFile) (StateFileActions, error)
 	UpdateStateFile(string, *SuspendStateFile) (*SuspendStateFile, error)
 	DeleteStateFile(string) error
 }

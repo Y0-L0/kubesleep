@@ -35,14 +35,14 @@ func (m *mockK8S) ScaleStatefulSet(ns, name string, replicas int32) error {
 	return args.Error(0)
 }
 
-func (m *mockK8S) GetStateFile(ns string) (*SuspendStateFile, error) {
+func (m *mockK8S) GetStateFile(ns string) (*SuspendStateFile, StateFileActions, error) {
 	args := m.Called(ns)
-	return args.Get(0).(*SuspendStateFile), args.Error(1)
+	return args.Get(0).(*SuspendStateFile), args.Get(1).(StateFileActions), args.Error(2)
 }
 
-func (m *mockK8S) CreateStateFile(ns string, file *SuspendStateFile) (*SuspendStateFile, error) {
+func (m *mockK8S) CreateStateFile(ns string, file *SuspendStateFile) (StateFileActions, error) {
 	args := m.Called(ns, file)
-	return args.Get(0).(*SuspendStateFile), args.Error(1)
+	return args.Get(0).(StateFileActions), args.Error(1)
 }
 
 func (m *mockK8S) UpdateStateFile(ns string, file *SuspendStateFile) (*SuspendStateFile, error) {

@@ -27,6 +27,19 @@ func (s *Integrationtest) TestCreateDeleteStatefile() {
 	s.Require().NoError(err)
 }
 
+func (s *Integrationtest) TestCreateStatefileAlreadyExists() {
+	deleteNamespace, err := testNamespace("create-statefile-already-exists", s.k8s, false)
+	s.Require().NoError(err)
+	defer deleteNamespace()
+
+	actions, err := s.k8s.CreateStateFile("create-statefile-already-exists", &kubesleep.SuspendStateFile{})
+	s.Require().NoError(err)
+	defer actions.Delete()
+
+	_, err = s.k8s.CreateStateFile("create-statefile-already-exists", &kubesleep.SuspendStateFile{})
+	s.Require().ErrorAs(err, new(StatefileAlreadyExistsError))
+}
+
 func (s *Integrationtest) TestUpdateStatefile() {
 	deleteNamespace, err := testNamespace("update-statefile", s.k8s, false)
 	s.Require().NoError(err)
@@ -46,12 +59,48 @@ func (s *Integrationtest) TestUpdateStatefile() {
 	)
 	_, err = s.k8s.UpdateStateFile("update-statefile", &stateFile)
 
-	actualStateFile, err := s.k8s.GetStateFile("update-statefile")
+	actualStateFile, _, err := s.k8s.GetStateFile("update-statefile")
+	s.Require().NoError(err)
 	slog.Debug("Read updated state file from cluster", "stateFile", stateFile)
 
 	expected := kubesleep.NewSuspendStateFile(TEST_SUSPENDABLES, true)
 	s.Require().Equal(
 		&expected,
+		actualStateFile,
+	)
+}
+
+func (s *Integrationtest) TestUpdateStatefileOptimisticConcurrency() {
+	// arrange
+	namespace := "uptate-statefile-optimistic-concurrency"
+	deleteNamespace, err := testNamespace(namespace, s.k8s, false)
+	s.Require().NoError(err)
+	defer deleteNamespace()
+
+	stateFile1 := kubesleep.NewSuspendStateFile(
+		map[string]kubesleep.Suspendable{},
+		true,
+	)
+	stateFile2 := kubesleep.NewSuspendStateFile(
+		TEST_SUSPENDABLES,
+		true,
+	)
+	_, err = s.k8s.CreateStateFile(namespace, &stateFile1)
+	s.Require().NoError(err)
+	defer s.k8s.DeleteStateFile(namespace)
+
+	// act
+	_, initialActions, err := s.k8s.GetStateFile(namespace)
+	s.Require().NoError(err)
+	_, err = s.k8s.UpdateStateFile(namespace, &stateFile2)
+	err = initialActions.Update(&stateFile1)
+	s.Require().Error(err)
+
+	actualStateFile, _, err := s.k8s.GetStateFile(namespace)
+	s.Require().NoError(err)
+
+	s.Require().Equal(
+		&stateFile2,
 		actualStateFile,
 	)
 }

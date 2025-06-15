@@ -2,10 +2,9 @@ package k8s
 
 import (
 	"fmt"
-	"log/slog"
 
 	kubesleep "github.com/Y0-L0/kubesleep/kubesleep"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -13,35 +12,50 @@ import (
 const STATE_FILE_NAME = "kubesleep-suspend-state"
 const STATE_FILE_KEY = "kubesleep.json"
 
-func (k8s K8Simpl) GetStateFile(namespace string) (*kubesleep.SuspendStateFile, error) {
-	result, err := k8s.clientset.CoreV1().ConfigMaps(namespace).Get(
+type StatefileAlreadyExistsError string
+
+func (e StatefileAlreadyExistsError) Error() string { return string(e) }
+
+type StateFileActionsImpl struct {
+	k8s       *K8Simpl
+	configmap *corev1.ConfigMap
+}
+
+func (s *StateFileActionsImpl) Update(data *kubesleep.SuspendStateFile) error {
+	var err error
+	s.configmap.Data[STATE_FILE_KEY] = data.ToJson()
+	s.configmap, err = s.k8s.clientset.CoreV1().ConfigMaps(s.configmap.ObjectMeta.Namespace).Update(
+		s.k8s.ctx,
+		s.configmap,
+		metav1.UpdateOptions{},
+	)
+	return err
+}
+
+func (s *StateFileActionsImpl) Delete() error {
+	return s.k8s.clientset.CoreV1().ConfigMaps(s.configmap.ObjectMeta.Namespace).Delete(
+		s.k8s.ctx,
+		s.configmap.Name,
+		metav1.DeleteOptions{},
+	)
+}
+
+func (k8s *K8Simpl) GetStateFile(namespace string) (*kubesleep.SuspendStateFile, kubesleep.StateFileActions, error) {
+	configmap, err := k8s.clientset.CoreV1().ConfigMaps(namespace).Get(
 		k8s.ctx,
 		STATE_FILE_NAME,
 		metav1.GetOptions{},
 	)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return kubesleep.NewSuspendStateFileFromJson(result.Data[STATE_FILE_KEY]), nil
+	return kubesleep.NewSuspendStateFileFromJson(configmap.Data[STATE_FILE_KEY]), &StateFileActionsImpl{k8s, configmap}, nil
 }
 
-func (k8s *K8Simpl) CreateStateFile(namespace string, data *kubesleep.SuspendStateFile) (*kubesleep.SuspendStateFile, error) {
+func (k8s *K8Simpl) CreateStateFile(namespace string, data *kubesleep.SuspendStateFile) (kubesleep.StateFileActions, error) {
 	// Create a new state file as a kubernetes configmap
-	// Will return the current state of the configmap inside the cluster.
-	result, err := k8s.clientset.CoreV1().ConfigMaps(namespace).Get(
-		k8s.ctx,
-		STATE_FILE_NAME,
-		metav1.GetOptions{},
-	)
-	if err == nil {
-		slog.Info("statefile configmap already exists indicating a previously aborted suspend operation.", "configmap name", STATE_FILE_NAME)
-		return kubesleep.NewSuspendStateFileFromJson(result.Data[STATE_FILE_KEY]), nil
-	}
-	if !apierrors.IsNotFound(err) {
-		return nil, fmt.Errorf("Problem when reading configmap with name: %s error: %w", STATE_FILE_NAME, err)
-	}
 
-	configmap := &v1.ConfigMap{
+	configmap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      STATE_FILE_NAME,
 			Namespace: namespace,
@@ -51,15 +65,21 @@ func (k8s *K8Simpl) CreateStateFile(namespace string, data *kubesleep.SuspendSta
 		},
 	}
 
-	result, err = k8s.clientset.CoreV1().ConfigMaps(namespace).Create(
+	configmap, err := k8s.clientset.CoreV1().ConfigMaps(namespace).Create(
 		k8s.ctx,
 		configmap,
 		metav1.CreateOptions{},
 	)
+	if apierrors.IsAlreadyExists(err) {
+		return nil, StatefileAlreadyExistsError(
+			fmt.Sprintf("statefile configmap %s already exists indicating an in-progress or aborted suspend operation.", STATE_FILE_NAME),
+		)
+	}
 	if err != nil {
 		return nil, err
 	}
-	return kubesleep.NewSuspendStateFileFromJson(result.Data[STATE_FILE_KEY]), nil
+
+	return &StateFileActionsImpl{k8s, configmap}, nil
 }
 
 func (k8s *K8Simpl) UpdateStateFile(namespace string, data *kubesleep.SuspendStateFile) (*kubesleep.SuspendStateFile, error) {
