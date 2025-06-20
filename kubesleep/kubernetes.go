@@ -16,3 +16,7 @@ type K8S interface {
 }
 
 type K8SFactory func() (K8S, error)
+
+type StatefileAlreadyExistsError string
+
+func (e StatefileAlreadyExistsError) Error() string { return string(e) }

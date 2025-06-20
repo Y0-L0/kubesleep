@@ -1,6 +1,7 @@
 package kubesleep
 
 import (
+	"errors"
 	"fmt"
 	"maps"
 )
@@ -46,6 +47,25 @@ func (n *suspendableNamespaceImpl) wake(k8s K8S) error {
 	return actions.Delete()
 }
 
+func (n *suspendableNamespaceImpl) ensureStateFile(k8s K8S, stateFile *SuspendStateFile) (*SuspendStateFile, StateFileActions, error) {
+	actions, err := k8s.CreateStateFile(n.name, stateFile)
+	var target StatefileAlreadyExistsError
+
+	if err == nil {
+		return stateFile, actions, nil
+	}
+	if !errors.As(err, &target) {
+		return nil, nil, err
+	}
+
+	var existingStateFile *SuspendStateFile
+	existingStateFile, actions, err = k8s.GetStateFile(n.name)
+	if err != nil {
+		return nil, nil, err
+	}
+	return existingStateFile.merge(stateFile), actions, nil
+}
+
 func (n *suspendableNamespaceImpl) suspend(k8s K8S) error {
 	suspendables, err := k8s.GetDeployments(n.name)
 	if err != nil {
@@ -57,11 +77,10 @@ func (n *suspendableNamespaceImpl) suspend(k8s K8S) error {
 	}
 	maps.Copy(suspendables, sus)
 
-	stateFile := &SuspendStateFile{
+	stateFile, actions, err := n.ensureStateFile(k8s, &SuspendStateFile{
 		suspendables: suspendables,
 		finished:     false,
-	}
-	actions, err := k8s.CreateStateFile(n.name, stateFile)
+	})
 	if err != nil {
 		return err
 	}

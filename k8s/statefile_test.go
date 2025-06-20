@@ -37,7 +37,7 @@ func (s *Integrationtest) TestCreateStatefileAlreadyExists() {
 	defer actions.Delete()
 
 	_, err = s.k8s.CreateStateFile("create-statefile-already-exists", &kubesleep.SuspendStateFile{})
-	s.Require().ErrorAs(err, new(StatefileAlreadyExistsError))
+	s.Require().ErrorAs(err, new(kubesleep.StatefileAlreadyExistsError))
 }
 
 func (s *Integrationtest) TestUpdateStatefile() {

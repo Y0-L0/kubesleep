@@ -12,10 +12,6 @@ import (
 const STATE_FILE_NAME = "kubesleep-suspend-state"
 const STATE_FILE_KEY = "kubesleep.json"
 
-type StatefileAlreadyExistsError string
-
-func (e StatefileAlreadyExistsError) Error() string { return string(e) }
-
 type StateFileActionsImpl struct {
 	k8s       *K8Simpl
 	configmap *corev1.ConfigMap
@@ -71,7 +67,7 @@ func (k8s *K8Simpl) CreateStateFile(namespace string, data *kubesleep.SuspendSta
 		metav1.CreateOptions{},
 	)
 	if apierrors.IsAlreadyExists(err) {
-		return nil, StatefileAlreadyExistsError(
+		return nil, kubesleep.StatefileAlreadyExistsError(
 			fmt.Sprintf("statefile configmap %s already exists indicating an in-progress or aborted suspend operation.", STATE_FILE_NAME),
 		)
 	}

@@ -67,3 +67,30 @@ func (s *Unittest) TestNamespaceSuspend() {
 	k8s.AssertExpectations(s.T())
 	s.Require().NoError(err)
 }
+
+func (s *Unittest) TestNamespaceEnsureStateFileGetError() {
+	k8s, _ := NewMockK8S()
+	k8s.On("CreateStateFile", "foo", mock.Anything).Return((*MockStateFileActions)(nil), StatefileAlreadyExistsError("foobar"))
+	k8s.On("GetStateFile", "foo").Return((*SuspendStateFile)(nil), (*MockStateFileActions)(nil), errExpected)
+
+	stateFile := NewSuspendStateFile(map[string]Suspendable{}, false)
+	namespace := &suspendableNamespaceImpl{"foo", true}
+	_, _, err := namespace.ensureStateFile(k8s, &stateFile)
+
+	k8s.AssertExpectations(s.T())
+	s.Require().Equal(errExpected, err)
+}
+
+func (s *Unittest) TestNamespaceEnsureStateFile() {
+	k8s, _ := NewMockK8S()
+	existingStateFile := TEST_SUSPEND_STATE_FILE
+	k8s.On("CreateStateFile", "foo", mock.Anything).Return((*MockStateFileActions)(nil), StatefileAlreadyExistsError("foobar"))
+	k8s.On("GetStateFile", "foo").Return(&existingStateFile, (*MockStateFileActions)(nil), nil)
+
+	stateFile := NewSuspendStateFile(map[string]Suspendable{}, false)
+	namespace := &suspendableNamespaceImpl{"foo", true}
+	_, _, err := namespace.ensureStateFile(k8s, &stateFile)
+
+	k8s.AssertExpectations(s.T())
+	s.Require().NoError(err)
+}

@@ -53,7 +53,7 @@ func NewSuspendStateFileFromJson(data string) *SuspendStateFile {
 	return &stateFile
 }
 
-func (s SuspendStateFile) ToJson() string {
+func (s *SuspendStateFile) ToJson() string {
 	suspendables := map[string]suspendableDto{}
 	for i, s := range s.suspendables {
 		suspendables[i] = s.toDto()
@@ -68,4 +68,19 @@ func (s SuspendStateFile) ToJson() string {
 	}
 	slog.Debug("Serialized state file to json", "jsonString", jsonData)
 	return string(jsonData)
+}
+
+func (s *SuspendStateFile) merge(other *SuspendStateFile) *SuspendStateFile {
+	result := SuspendStateFile{
+		suspendables: make(map[string]Suspendable, len(other.suspendables)),
+		finished:     s.finished && other.finished,
+	}
+
+	for k, v := range other.suspendables {
+		if sv, ok := s.suspendables[k]; ok {
+			v = sv
+		}
+		result.suspendables[k] = v
+	}
+	return &result
 }
