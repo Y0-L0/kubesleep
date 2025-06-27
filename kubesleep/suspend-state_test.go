@@ -22,15 +22,28 @@ var TEST_SUSPEND_STATE_FILE = SuspendStateFile{
 }
 
 const TEST_SUSPEND_STATE_FILE_JSON = `{
-  "suspendables": {
-    "0:test-deployment": {
+  "suspendables": [
+    {
       "ManifestType": 0,
       "Name": "test-deployment",
       "Replicas": 2
     }
-  },
+  ],
   "finished": false
 }`
+
+func (s *Unittest) TestStatefileJson() {
+	json := TEST_SUSPEND_STATE_FILE.ToJson()
+	stateFile := NewSuspendStateFileFromJson(json)
+	s.Require().Equal(&TEST_SUSPEND_STATE_FILE, stateFile)
+}
+
+func (s *Unittest) TestEmptyStatefileJson() {
+	expectedStateFile := &SuspendStateFile{suspendables: map[string]Suspendable{}}
+	json := expectedStateFile.ToJson()
+	stateFile := NewSuspendStateFileFromJson(json)
+	s.Require().Equal(expectedStateFile, stateFile)
+}
 
 func (s *Unittest) TestSerializeStatefile() {
 	json := TEST_SUSPEND_STATE_FILE.ToJson()

@@ -12,8 +12,8 @@ type StateFileActions interface {
 }
 
 type suspendStateFileDto struct {
-	Suspendables map[string]suspendableDto `json:"suspendables"`
-	Finished     *bool                     `json:"finished"`
+	Suspendables []suspendableDto `json:"suspendables"`
+	Finished     *bool            `json:"finished"`
 }
 
 type SuspendStateFile struct {
@@ -42,8 +42,9 @@ func NewSuspendStateFileFromJson(data string) *SuspendStateFile {
 	}
 
 	suspendables := map[string]Suspendable{}
-	for i, s := range stateFileDto.Suspendables {
-		suspendables[i] = s.fromDto()
+	for _, s := range stateFileDto.Suspendables {
+		sus := s.fromDto()
+		suspendables[sus.Identifier()] = sus
 	}
 	stateFile := SuspendStateFile{
 		suspendables: suspendables,
@@ -54,9 +55,9 @@ func NewSuspendStateFileFromJson(data string) *SuspendStateFile {
 }
 
 func (s *SuspendStateFile) ToJson() string {
-	suspendables := map[string]suspendableDto{}
-	for i, s := range s.suspendables {
-		suspendables[i] = s.toDto()
+	suspendables := []suspendableDto{}
+	for _, s := range s.suspendables {
+		suspendables = append(suspendables, s.toDto())
 	}
 	stateFileDto := suspendStateFileDto{
 		suspendables,
