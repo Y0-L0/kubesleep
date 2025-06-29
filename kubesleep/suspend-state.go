@@ -83,5 +83,6 @@ func (s *SuspendStateFile) merge(other *SuspendStateFile) *SuspendStateFile {
 		}
 		result.suspendables[k] = v
 	}
+	slog.Debug("Merged two statefiles together", "merged Statefile", result)
 	return &result
 }

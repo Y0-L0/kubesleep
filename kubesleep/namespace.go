@@ -3,6 +3,7 @@ package kubesleep
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"maps"
 )
 
@@ -48,16 +49,19 @@ func (n *suspendableNamespaceImpl) wake(k8s K8S) error {
 }
 
 func (n *suspendableNamespaceImpl) ensureStateFile(k8s K8S, stateFile *SuspendStateFile) (*SuspendStateFile, StateFileActions, error) {
-	actions, err := k8s.CreateStateFile(n.name, stateFile)
 	var target StatefileAlreadyExistsError
 
+	actions, err := k8s.CreateStateFile(n.name, stateFile)
 	if err == nil {
+		slog.Debug("No existnig statefile found. Creating a new one to save the starting conditions.")
 		return stateFile, actions, nil
 	}
 	if !errors.As(err, &target) {
+		slog.Error("Statefile creation failed for an unknown reason", "namespace", n.name)
 		return nil, nil, err
 	}
 
+	slog.Debug("Statefile already exists. Reading exisitng statefile and merging it with the current state in the cluster.")
 	var existingStateFile *SuspendStateFile
 	existingStateFile, actions, err = k8s.GetStateFile(n.name)
 	if err != nil {
