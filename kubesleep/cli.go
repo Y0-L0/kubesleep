@@ -1,6 +1,7 @@
 package kubesleep
 
 import (
+	"fmt"
 	"log/slog"
 
 	"github.com/spf13/cobra"
@@ -23,6 +24,12 @@ func newParser(args []string, k8sFactory func() (K8S, error)) (*cobra.Command, *
 		Short: "Suspend one or multiple kubernetes namespaces.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			slog.Debug("Parsed cli arguments for the sleep subcommand", "config", config)
+			if !config.allNamespaces && len(config.namespaces) == 0 {
+				return fmt.Errorf("either --all-namespaces or at least one --namespace (-n) must be specified")
+			}
+			if config.allNamespaces && (len(config.namespaces) > 0 || config.force) {
+				return fmt.Errorf("--all-namespaces cannot be combined with --namespace or --force")
+			}
 			return config.suspend(k8sFactory)
 		},
 	}
@@ -40,7 +47,12 @@ func newParser(args []string, k8sFactory func() (K8S, error)) (*cobra.Command, *
 		false,
 		"Ignore the do-not-suspend label on the namespace",
 	)
-	suspendCmd.MarkFlagRequired("namespace")
+	suspendCmd.Flags().BoolVar(
+		&config.allNamespaces,
+		"all-namespaces",
+		false,
+		"Suspend all non-protected namespaces",
+	)
 
 	resumeCmd := &cobra.Command{
 		Use:   "wake",

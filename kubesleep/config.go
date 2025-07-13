@@ -3,9 +3,12 @@ package kubesleep
 import "log/slog"
 
 type cliConfig struct {
-	namespaces []string
-	force      bool
+	namespaces    []string
+	force         bool
+	allNamespaces bool
 }
+
+var PROTECTED_NAMESPACES = []string{"default", "kube-node-lease", "kube-public", "kube-system", "ingress", "istio", "local-path"}
 
 func (c cliConfig) suspend(k8sFactory func() (K8S, error)) error {
 	if c.namespaces == nil {
