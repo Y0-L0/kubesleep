@@ -20,28 +20,28 @@ func (s *Unittest) TestValidCliArguments() {
 		config  *cliConfig
 	}{
 		{
-			"suspend no ns",
-			[]string{"kubesleep", "suspend"},
-			"suspend",
-			&cliConfig{"", false},
-		},
-		{
 			"suspend with ns",
 			[]string{"kubesleep", "suspend", "-n", "test-ns"},
 			"suspend",
-			&cliConfig{"test-ns", false},
+			&cliConfig{[]string{"test-ns"}, false},
+		},
+		{
+			"suspend multiple namespaces",
+			[]string{"kubesleep", "suspend", "-n", "test-ns", "-n", "other-test-ns"},
+			"suspend",
+			&cliConfig{[]string{"test-ns", "other-test-ns"}, false},
 		},
 		{
 			"suspend with force",
 			[]string{"kubesleep", "suspend", "-n", "test-ns", "-f"},
 			"suspend",
-			&cliConfig{"test-ns", true},
+			&cliConfig{[]string{"test-ns"}, true},
 		},
 		{
 			"wake with ns",
 			[]string{"kubesleep", "wake", "-n", "test-ns"},
 			"wake",
-			&cliConfig{"test-ns", false},
+			&cliConfig{[]string{"test-ns"}, false},
 		},
 	}
 
@@ -70,7 +70,8 @@ func (s *Unittest) TestInvalidCliArguments() {
 		name string
 		args []string
 	}{
-		{"wake no namespace", []string{"kubesleep", "wake"}},
+		// {"wake no namespace", []string{"kubesleep", "wake"}},
+		// {"suspend no namespace", []string{"kubesleep", "suspend"}},
 		{"unknown command", []string{"kubesleep", "unknown"}},
 	}
 

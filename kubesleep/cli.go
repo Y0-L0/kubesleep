@@ -26,11 +26,11 @@ func newParser(args []string, k8sFactory func() (K8S, error)) (*cobra.Command, *
 			return config.suspend(k8sFactory)
 		},
 	}
-	suspendCmd.Flags().StringVarP(
-		&config.namespace,
+	suspendCmd.Flags().StringArrayVarP(
+		&config.namespaces,
 		"namespace",
 		"n",
-		"",
+		nil,
 		"Kubernetes namespace",
 	)
 	suspendCmd.Flags().BoolVarP(
@@ -40,6 +40,7 @@ func newParser(args []string, k8sFactory func() (K8S, error)) (*cobra.Command, *
 		false,
 		"Ignore the do-not-suspend label on the namespace",
 	)
+	suspendCmd.MarkFlagRequired("namespace")
 
 	resumeCmd := &cobra.Command{
 		Use:   "wake",
@@ -49,11 +50,11 @@ func newParser(args []string, k8sFactory func() (K8S, error)) (*cobra.Command, *
 			return config.wake(k8sFactory)
 		},
 	}
-	resumeCmd.Flags().StringVarP(
-		&config.namespace,
+	resumeCmd.Flags().StringArrayVarP(
+		&config.namespaces,
 		"namespace",
 		"n",
-		"",
+		nil,
 		"Kubernetes namespace",
 	)
 	resumeCmd.MarkFlagRequired("namespace")
