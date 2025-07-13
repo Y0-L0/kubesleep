@@ -1,6 +1,12 @@
 package kubesleep
 
-import "github.com/stretchr/testify/mock"
+import (
+	"log/slog"
+
+	"github.com/stretchr/testify/mock"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
 
 // Test don't wake an unfinished namespace (aborted suspend) Including valid error statement.
 // Optionally add a `--force` option to recover a half-suspended namespace.
@@ -14,7 +20,7 @@ func (s *Unittest) TestNamespaceWake() {
 	err := NewSuspendableNamespace("foo", true).wake(k8s)
 
 	k8s.AssertExpectations(s.T())
-	s.Require().Equal(errExpected, err)
+	s.Require().ErrorIs(err, errExpected)
 }
 
 func (s *Unittest) TestNamespaceWakeFailsWhenSuspendInProgress() {
@@ -50,6 +56,28 @@ func (s *Unittest) TestNamespaceSuspendCreateStatefileFailed() {
 
 	k8s.AssertExpectations(s.T())
 	s.Require().Equal(errExpected, err)
+}
+
+func (s *Unittest) TestSuspendConflict() {
+	k8s, _ := NewMockK8S()
+	actions := MockStateFileActions{}
+	conflictErr := &apierrors.StatusError{
+		ErrStatus: metav1.Status{Reason: metav1.StatusReasonConflict},
+	}
+	sus := TEST_SUSPENDABLE
+	sus.Suspend = func() error {
+		slog.Debug("Mock suspend returning conflictErr")
+		return conflictErr
+	}
+	k8s.On("GetDeployments", "foo").Return(map[string]Suspendable{sus.Identifier(): sus}, nil)
+	k8s.On("GetStatefulSets", "foo").Return(map[string]Suspendable{}, nil)
+	k8s.On("CreateStateFile", "foo", mock.Anything).Return(&actions, nil)
+
+	err := NewSuspendableNamespace("foo", true).suspend(k8s)
+
+	k8s.AssertExpectations(s.T())
+	s.Require().ErrorIs(err, conflictErr)
+	s.Require().Contains(err.Error(), "operation failed after")
 }
 
 func (s *Unittest) TestNamespaceSuspend() {

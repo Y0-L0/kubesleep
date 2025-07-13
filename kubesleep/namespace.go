@@ -28,7 +28,6 @@ func NewSuspendableNamespace(name string, suspendable bool) SuspendableNamespace
 func (n *suspendableNamespaceImpl) Suspendable() bool {
 	return n._suspendable
 }
-
 func (n *suspendableNamespaceImpl) wake(k8s K8S) error {
 	stateFile, actions, err := k8s.GetStateFile(n.name)
 	if err != nil {
@@ -40,7 +39,7 @@ func (n *suspendableNamespaceImpl) wake(k8s K8S) error {
 	}
 
 	for _, s := range stateFile.suspendables {
-		err = s.wake(n.name, k8s)
+		err = repeat(func() error { return s.wake(n.name, k8s) })
 		if err != nil {
 			return err
 		}
@@ -89,8 +88,10 @@ func (n *suspendableNamespaceImpl) suspend(k8s K8S) error {
 		return err
 	}
 
+	slog.Debug("Suspending workloads", "stateFile", stateFile)
+
 	for _, sus := range suspendables {
-		err = sus.Suspend()
+		err = repeat(sus.Suspend)
 		if err != nil {
 			return err
 		}
