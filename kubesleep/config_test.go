@@ -1,8 +1,12 @@
 package kubesleep
 
-import "github.com/stretchr/testify/mock"
+import (
+	"github.com/stretchr/testify/mock"
+)
 
 var brokenK8SFactory = func() (K8S, error) { return nil, errExpected }
+
+var placeholderK8S = func() (K8S, error) { return nil, nil }
 
 func (s *Unittest) TestSuspendBrokenK8SFactory() {
 	err := cliConfig{namespaces: []string{"foo"}}.suspend(brokenK8SFactory)
@@ -46,28 +50,61 @@ func (s *Unittest) TestSuspendEmptyNamespace() {
 	s.Require().NoError(err)
 }
 
-func (s *Unittest) TestWakeBrokenK8SFactory() {
-	err := cliConfig{namespaces: []string{"foo"}}.wake(brokenK8SFactory)
+func (s *Unittest) TestSuspendAllNamespacesError() {
+	k8s, factory := NewMockK8S()
+	k8s.On("GetNamespaces").Return([]string{}, errExpected)
 
-	s.Require().Equal(errExpected, err)
+	err := cliConfig{allNamespaces: true}.suspend(factory)
+
+	k8s.AssertExpectations(s.T())
+	s.Require().Equal(err, errExpected)
 }
 
-func (s *Unittest) TestWakeNoNamespace() {
-	s.Require().Panics(func() {
-		_ = cliConfig{}.wake(nil)
-	})
+func (s *Unittest) TestSuspendAllNamespaces() {
+	k8s, factory := NewMockK8S()
+	k8s.On("GetNamespaces").Return([]string{"bar"}, nil)
+	k8s.On("GetSuspendableNamespace", "bar").Return(NewSuspendableNamespace("bar", false), nil)
+
+	err := cliConfig{allNamespaces: true}.suspend(factory)
+
+	k8s.AssertExpectations(s.T())
+	s.Require().NoError(err)
 }
 
-func (s *Unittest) TestWakeInvalidNamespace() {
+func (s *Unittest) TestSuspendConfigCollision() {
 	s.Require().Panics(func() {
-		_ = cliConfig{namespaces: []string{""}}.wake(nil)
+		_ = cliConfig{allNamespaces: true, force: true}.suspend(placeholderK8S)
 	})
 }
 
 func (s *Unittest) TestSuspendNoNamespace() {
 	s.Require().Panics(func() {
-		_ = cliConfig{}.suspend(nil)
+		_ = cliConfig{}.suspend(placeholderK8S)
 	})
+}
+
+func (s *Unittest) TestSuspendEmptyNamespaceList() {
+	s.Require().Panics(func() {
+		_ = cliConfig{namespaces: []string{}}.suspend(placeholderK8S)
+	})
+}
+
+func (s *Unittest) TestWakeNoNamespace() {
+	s.Require().Panics(func() {
+		_ = cliConfig{}.wake(placeholderK8S)
+	})
+}
+
+func (s *Unittest) TestWakeInvalidNamespace() {
+	s.Require().Panics(func() {
+		_ = cliConfig{namespaces: []string{""}}.wake(placeholderK8S)
+	})
+}
+
+func (s *Unittest) TestWakeBrokenK8SFactory() {
+	err := cliConfig{namespaces: []string{"foo"}}.wake(brokenK8SFactory)
+
+	s.Require().Equal(errExpected, err)
 }
 
 func (s *Unittest) TestWakeBrokenK8S() {

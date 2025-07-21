@@ -77,13 +77,12 @@ func newParser(args []string, k8sFactory func() (K8S, error), setupLogging func(
 		false,
 		"Ignore the do-not-suspend label on the namespace",
 	)
-	suspendCmd.MarkFlagRequired("namespace")
-	// suspendCmd.Flags().BoolVar(
-	// 	&config.allNamespaces,
-	// 	"all-namespaces",
-	// 	false,
-	// 	"Suspend all non-protected namespaces",
-	// )
+	suspendCmd.Flags().BoolVar(
+		&config.allNamespaces,
+		"all-namespaces",
+		false,
+		"Suspend all unprotected namespaces",
+	)
 
 	resumeCmd := &cobra.Command{
 		Use:   "wake",

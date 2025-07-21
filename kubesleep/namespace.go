@@ -9,6 +9,7 @@ import (
 
 type SuspendableNamespace interface {
 	Suspendable() bool
+	Name() string
 	suspend(K8S) error
 	wake(K8S) error
 }
@@ -28,6 +29,10 @@ func NewSuspendableNamespace(name string, suspendable bool) SuspendableNamespace
 func (n *suspendableNamespaceImpl) Suspendable() bool {
 	return n._suspendable
 }
+func (n *suspendableNamespaceImpl) Name() string {
+	return n.name
+}
+
 func (n *suspendableNamespaceImpl) wake(k8s K8S) error {
 	stateFile, actions, err := k8s.GetStateFile(n.name)
 	if err != nil {

@@ -91,8 +91,8 @@ func (s *Unittest) TestInvalidCliArguments() {
 		{"wake no namespace", []string{"kubesleep", "wake"}, &cliConfig{}},
 		{"suspend no namespace", []string{"kubesleep", "suspend"}, &cliConfig{}},
 		{"suspend no namespace force", []string{"kubesleep", "suspend", "--force"}, &cliConfig{force: true}},
-		// {"suspend all namespaces force", []string{"kubesleep", "suspend", "--all-namespaces", "--force"}, &cliConfig{allNamespaces: true, force: true}},
-		// {"suspend all namespaces namespace colision", []string{"kubesleep", "suspend", "--all-namespaces", "--namespace", "foo"}, &cliConfig{allNamespaces: true, namespaces: []string{"foo"}}},
+		{"suspend all namespaces force", []string{"kubesleep", "suspend", "--all-namespaces", "--force"}, &cliConfig{allNamespaces: true, force: true}},
+		{"suspend all namespaces namespace colision", []string{"kubesleep", "suspend", "--all-namespaces", "--namespace", "foo"}, &cliConfig{allNamespaces: true, namespaces: []string{"foo"}}},
 		{"unknown command", []string{"kubesleep", "unknown"}, &cliConfig{}},
 	}
 
