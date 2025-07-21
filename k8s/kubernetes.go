@@ -59,3 +59,16 @@ func (k8s K8Simpl) GetSuspendableNamespace(namespace string) (kubesleep.Suspenda
 	slog.Info("parsed namespace", "namespace", namespaceObj)
 	return namespaceObj, err
 }
+
+func (k8s K8Simpl) GetNamespaces() ([]string, error) {
+	var result []string
+	namespaces, err := k8s.clientset.CoreV1().Namespaces().List(k8s.ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, n := range namespaces.Items {
+		result = append(result, n.Name)
+	}
+	return result, nil
+}

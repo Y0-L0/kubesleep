@@ -10,6 +10,11 @@ var errExpected = errors.New("broken k8s factory")
 
 type mockK8S struct{ mock.Mock }
 
+func (m *mockK8S) GetNamespaces() ([]string, error) {
+	args := m.Called()
+	return args.Get(0).([]string), args.Error(1)
+}
+
 func (m *mockK8S) GetSuspendableNamespace(ns string) (SuspendableNamespace, error) {
 	args := m.Called(ns)
 	return args.Get(0).(SuspendableNamespace), args.Error(1)

@@ -11,14 +11,21 @@ type cliConfig struct {
 var PROTECTED_NAMESPACES = []string{"default", "kube-node-lease", "kube-public", "kube-system", "ingress", "istio", "local-path"}
 
 func (c cliConfig) suspend(k8sFactory func() (K8S, error)) error {
-	if c.namespaces == nil {
-		panic("invalid namespaces value")
-	}
 	k8s, err := k8sFactory()
 	if err != nil {
 		return err
 	}
 
+	if c.allNamespaces {
+		c.namespaces, err = k8s.GetNamespaces()
+		if err != nil {
+			return err
+		}
+	}
+
+	if c.namespaces == nil || len(c.namespaces) == 0 {
+		panic("invalid namespaces value")
+	}
 	for _, namespace := range c.namespaces {
 		ns, err := k8s.GetSuspendableNamespace(namespace)
 		if err != nil {

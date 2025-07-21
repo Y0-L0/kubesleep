@@ -1,6 +1,7 @@
 package kubesleep
 
 type K8S interface {
+	GetNamespaces() ([]string, error)
 	GetSuspendableNamespace(string) (SuspendableNamespace, error)
 
 	GetDeployments(string) (map[string]Suspendable, error)
