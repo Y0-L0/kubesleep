@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	kubesleep "github.com/Y0-L0/kubesleep/kubesleep"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -43,32 +44,37 @@ func (k8s K8Simpl) GetSuspendableNamespace(namespace string) (kubesleep.Suspenda
 		return nil, err
 	}
 
-	suspendable := true
-	if kubernetesNamespace.ObjectMeta.Annotations != nil {
-		_, found := kubernetesNamespace.ObjectMeta.Annotations["kubesleep.xyz/do-not-suspend"]
-		suspendable = !found
-	} else {
-		slog.Debug("Namespace has no relevant annotations")
-	}
-
-	slog.Debug("namespace manifest", "suspendable", suspendable, "kubernetesNamespace", kubernetesNamespace)
-	namespaceObj := kubesleep.NewSuspendableNamespace(
-		namespace,
-		suspendable,
-	)
-	slog.Info("parsed namespace", "namespace", namespaceObj)
-	return namespaceObj, err
+	return buildSuspendableNamespace(*kubernetesNamespace), err
 }
 
-func (k8s K8Simpl) GetNamespaces() ([]string, error) {
-	var result []string
+func (k8s K8Simpl) GetSuspendableNamespaces() ([]kubesleep.SuspendableNamespace, error) {
+	var result []kubesleep.SuspendableNamespace
 	namespaces, err := k8s.clientset.CoreV1().Namespaces().List(k8s.ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	for _, n := range namespaces.Items {
-		result = append(result, n.Name)
+	for _, ns := range namespaces.Items {
+		result = append(result, buildSuspendableNamespace(ns))
 	}
 	return result, nil
+}
+
+func buildSuspendableNamespace(kubernetesNamespace corev1.Namespace) kubesleep.SuspendableNamespace {
+	suspendable := true
+	if kubernetesNamespace.ObjectMeta.Annotations != nil {
+		_, found := kubernetesNamespace.ObjectMeta.Annotations["kubesleep.xyz/do-not-suspend"]
+		suspendable = !found
+	} else {
+		slog.Debug("Namespace has no relevant annotations", "namespace", kubernetesNamespace.Name)
+	}
+
+	slog.Debug("namespace manifest", "suspendable", suspendable, "kubernetesNamespace", kubernetesNamespace)
+	namespaceObj := kubesleep.NewSuspendableNamespace(
+		kubernetesNamespace.Name,
+		suspendable,
+	)
+	slog.Info("parsed namespace", "namespace", namespaceObj)
+	return namespaceObj
+
 }

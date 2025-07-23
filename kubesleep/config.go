@@ -32,19 +32,24 @@ func (c cliConfig) suspend(k8sFactory func() (K8S, error)) error {
 	if err != nil {
 		return err
 	}
+	var namespaces []SuspendableNamespace
 	if c.allNamespaces {
-		c.namespaces, err = k8s.GetNamespaces()
+		namespaces, err = k8s.GetSuspendableNamespaces()
 		if err != nil {
 			return err
+		}
+	} else {
+		for _, n := range c.namespaces {
+			ns, err := k8s.GetSuspendableNamespace(n)
+			if err != nil {
+				return err
+			}
+			namespaces = append(namespaces, ns)
 		}
 	}
 
-	for _, namespace := range c.namespaces {
-		ns, err := k8s.GetSuspendableNamespace(namespace)
-		if err != nil {
-			return err
-		}
-		if slices.Contains(PROTECTED_NAMESPACES, namespace) && (c.allNamespaces || !c.force) {
+	for _, ns := range namespaces {
+		if slices.Contains(PROTECTED_NAMESPACES, ns.Name()) && (c.allNamespaces || !c.force) {
 			slog.Info("Skipping automatically protected namespace", "namespace", ns.Name(), "force", c.force)
 			continue
 		}

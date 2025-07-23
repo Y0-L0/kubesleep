@@ -9,7 +9,12 @@ import (
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
 
-var STANDARD_NAMESPACES = []string{"default", "kube-node-lease", "kube-public", "kube-system"}
+var STANDARD_NAMESPACES = []kubesleep.SuspendableNamespace{
+	kubesleep.NewSuspendableNamespace("default", true),
+	kubesleep.NewSuspendableNamespace("kube-node-lease", true),
+	kubesleep.NewSuspendableNamespace("kube-public", true),
+	kubesleep.NewSuspendableNamespace("kube-system", true),
+}
 
 func (s *Integrationtest) TestLoadKubeconfig() {
 	apiConfig := clientcmdapi.NewConfig()
@@ -82,12 +87,12 @@ func (s *Integrationtest) TestGetNonSuspendableNamespace() {
 }
 
 func (s *Integrationtest) TestGetNamespace() {
-	expected := append(STANDARD_NAMESPACES, "get-namespaces")
+	expected := append(STANDARD_NAMESPACES, kubesleep.NewSuspendableNamespace("get-namespaces", true))
 	deleteNamespace, err := testNamespace("get-namespaces", s.k8s, false)
 	s.Require().NoError(err)
 	defer deleteNamespace()
 
-	namespaces, err := s.k8s.GetNamespaces()
+	namespaces, err := s.k8s.GetSuspendableNamespaces()
 	s.Require().NoError(err)
 	for _, e := range expected {
 		s.Require().Contains(namespaces, e)

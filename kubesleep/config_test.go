@@ -52,7 +52,7 @@ func (s *Unittest) TestSuspendEmptyNamespace() {
 
 func (s *Unittest) TestSuspendAllNamespacesError() {
 	k8s, factory := NewMockK8S()
-	k8s.On("GetNamespaces").Return([]string{}, errExpected)
+	k8s.On("GetSuspendableNamespaces").Return([]SuspendableNamespace{}, errExpected)
 
 	err := cliConfig{allNamespaces: true}.suspend(factory)
 
@@ -62,8 +62,17 @@ func (s *Unittest) TestSuspendAllNamespacesError() {
 
 func (s *Unittest) TestSuspendAllNamespaces() {
 	k8s, factory := NewMockK8S()
-	k8s.On("GetNamespaces").Return([]string{"bar"}, nil)
-	k8s.On("GetSuspendableNamespace", "bar").Return(NewSuspendableNamespace("bar", false), nil)
+	k8s.On("GetSuspendableNamespaces").Return([]SuspendableNamespace{NewSuspendableNamespace("bar", false)}, nil)
+
+	err := cliConfig{allNamespaces: true}.suspend(factory)
+
+	k8s.AssertExpectations(s.T())
+	s.Require().NoError(err)
+}
+
+func (s *Unittest) TestDontSuspendAutoprotected() {
+	k8s, factory := NewMockK8S()
+	k8s.On("GetSuspendableNamespaces").Return([]SuspendableNamespace{NewSuspendableNamespace("kube-system", true)}, nil)
 
 	err := cliConfig{allNamespaces: true}.suspend(factory)
 
