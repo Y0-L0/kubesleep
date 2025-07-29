@@ -20,7 +20,6 @@ type repeater struct {
 }
 
 func (e RepeaterError) Error() string {
-	slog.Error("JOHANNES was here")
 	return fmt.Sprintf("operation failed after %d tries %v", e.count, e.err)
 }
 
