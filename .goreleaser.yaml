@@ -26,6 +26,10 @@ builds:
     goarch:
       - amd64
       - arm64
+    ldflags:
+      - -X kubesleep/buildinfo.Version={{ .Version }}
+      - -X kubesleep/buildinfo.Commit={{ .ShortCommit }}
+      - -X kubesleep/buildinfo.BuildTime={{ .Date }}
 
 archives:
   - formats: [tar.gz]
