@@ -4,7 +4,6 @@ import (
 	"log/slog"
 
 	kubesleep "github.com/Y0-L0/kubesleep/kubesleep"
-	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -19,13 +18,11 @@ func (k8s K8Simpl) GetDeployments(namespace string) (map[string]kubesleep.Suspen
 	suspendables := map[string]kubesleep.Suspendable{}
 
 	for _, deployment := range deployments.Items {
-		suspend := func() error {
-			return k8s.suspendDeployment(&deployment)
-		}
+		suspend := k8s.suspendDeployment(namespace, deployment.Name)
 
 		s := kubesleep.NewSuspendable(
 			kubesleep.Deplyoment,
-			deployment.ObjectMeta.Name,
+			deployment.Name,
 			*deployment.Spec.Replicas,
 			suspend,
 		)
@@ -36,35 +33,44 @@ func (k8s K8Simpl) GetDeployments(namespace string) (map[string]kubesleep.Suspen
 	return suspendables, nil
 }
 
-func (k8s K8Simpl) suspendDeployment(deployment *appsv1.Deployment) error {
-	Replicas := int32(0)
-	deployment.Spec.Replicas = &Replicas
-	_, err := k8s.clientset.AppsV1().Deployments(deployment.Namespace).Update(
-		k8s.ctx,
-		deployment,
-		metav1.UpdateOptions{},
-	)
-	if err != nil {
-		return err
+func (k8s K8Simpl) suspendDeployment(namespace string, name string) func() error {
+	return func() error {
+		scalable, err := k8s.clientset.AppsV1().
+			Deployments(namespace).
+			GetScale(k8s.ctx, name, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+
+		scalable.Spec.Replicas = int32(0)
+
+		_, err = k8s.clientset.AppsV1().Deployments(namespace).UpdateScale(
+			k8s.ctx,
+			scalable.Name,
+			scalable,
+			metav1.UpdateOptions{},
+		)
+		if err != nil {
+			return err
+		}
+		slog.Info("Suspended Deployment", "name", scalable.Name)
+		return nil
 	}
-	slog.Info("Suspended Deployment", "name", deployment.Name)
-	return nil
 }
 
 func (k8s K8Simpl) ScaleDeployment(namespace string, name string, Replicas int32) error {
-	deployment, err := k8s.clientset.AppsV1().Deployments(namespace).Get(
-		k8s.ctx,
-		name,
-		metav1.GetOptions{},
-	)
+	scalable, err := k8s.clientset.AppsV1().
+		Deployments(namespace).
+		GetScale(k8s.ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
-	deployment.Spec.Replicas = &Replicas
 
-	_, err = k8s.clientset.AppsV1().Deployments(deployment.Namespace).Update(
+	scalable.Spec.Replicas = Replicas
+	_, err = k8s.clientset.AppsV1().Deployments(scalable.Namespace).UpdateScale(
 		k8s.ctx,
-		deployment,
+		scalable.Name,
+		scalable,
 		metav1.UpdateOptions{},
 	)
 	if err != nil {
