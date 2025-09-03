@@ -5,29 +5,37 @@ import (
 	"fmt"
 	"log/slog"
 	"maps"
+
+	"k8s.io/utils/strings/slices"
 )
 
+var PROTECTED_NAMESPACES = []string{"default", "kube-node-lease", "kube-public", "kube-system", "ingress-nginx", "istio", "local-path"}
+
 type SuspendableNamespace interface {
-	Suspendable() bool
 	Name() string
+	Protected() bool
+	autoProtected() bool
 	suspend(K8S) error
 	wake(K8S) error
 }
 
 type suspendableNamespaceImpl struct {
-	name         string
-	_suspendable bool
+	name      string
+	protected bool
 }
 
-func NewSuspendableNamespace(name string, suspendable bool) SuspendableNamespace {
+func NewSuspendableNamespace(name string, protected bool) SuspendableNamespace {
 	return &suspendableNamespaceImpl{
-		name:         name,
-		_suspendable: suspendable,
+		name:      name,
+		protected: protected,
 	}
 }
 
-func (n *suspendableNamespaceImpl) Suspendable() bool {
-	return n._suspendable
+func (n *suspendableNamespaceImpl) Protected() bool {
+	return n.protected || n.autoProtected()
+}
+func (n *suspendableNamespaceImpl) autoProtected() bool {
+	return slices.Contains(PROTECTED_NAMESPACES, n.name)
 }
 func (n *suspendableNamespaceImpl) Name() string {
 	return n.name
@@ -53,14 +61,14 @@ func (n *suspendableNamespaceImpl) wake(k8s K8S) error {
 }
 
 func (n *suspendableNamespaceImpl) ensureStateFile(k8s K8S, stateFile *SuspendStateFile) (*SuspendStateFile, StateFileActions, error) {
-	var target StatefileAlreadyExistsError
+	var alreadyExists StatefileAlreadyExistsError
 
 	actions, err := k8s.CreateStateFile(n.name, stateFile)
 	if err == nil {
 		slog.Debug("No existnig statefile found. Creating a new one to save the starting conditions.")
 		return stateFile, actions, nil
 	}
-	if !errors.As(err, &target) {
+	if !errors.As(err, &alreadyExists) {
 		slog.Error("Statefile creation failed for an unknown reason", "namespace", n.name)
 		return nil, nil, err
 	}

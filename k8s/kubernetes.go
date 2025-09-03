@@ -61,18 +61,17 @@ func (k8s K8Simpl) GetSuspendableNamespaces() ([]kubesleep.SuspendableNamespace,
 }
 
 func buildSuspendableNamespace(kubernetesNamespace corev1.Namespace) kubesleep.SuspendableNamespace {
-	suspendable := true
+	protected := false
 	if kubernetesNamespace.ObjectMeta.Annotations != nil {
-		_, found := kubernetesNamespace.ObjectMeta.Annotations["kubesleep.xyz/do-not-suspend"]
-		suspendable = !found
+		_, protected = kubernetesNamespace.ObjectMeta.Annotations["kubesleep.xyz/do-not-suspend"]
 	} else {
 		slog.Debug("Namespace has no relevant annotations", "namespace", kubernetesNamespace.Name)
 	}
 
-	slog.Debug("namespace manifest", "suspendable", suspendable, "kubernetesNamespace", kubernetesNamespace)
+	slog.Debug("namespace manifest", "suspendable", protected, "kubernetesNamespace", kubernetesNamespace)
 	namespaceObj := kubesleep.NewSuspendableNamespace(
 		kubernetesNamespace.Name,
-		suspendable,
+		protected,
 	)
 	slog.Info("parsed namespace", "namespace", namespaceObj)
 	return namespaceObj

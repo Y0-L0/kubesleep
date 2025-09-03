@@ -16,7 +16,7 @@ func (s *Unittest) TestSuspendBrokenK8SFactory() {
 
 func (s *Unittest) TestSuspendBrokenK8S() {
 	k8s, factory := NewMockK8S()
-	k8s.On("GetSuspendableNamespace", "foo").Return(NewSuspendableNamespace("foo", true), nil)
+	k8s.On("GetSuspendableNamespace", "foo").Return(NewSuspendableNamespace("foo", false), nil)
 	k8s.On("GetDeployments", "foo").Return(map[string]Suspendable{}, errExpected)
 
 	err := cliConfig{namespaces: []string{"foo"}}.suspend(factory)
@@ -27,7 +27,7 @@ func (s *Unittest) TestSuspendBrokenK8S() {
 
 func (s *Unittest) TestSuspendSkip() {
 	k8s, factory := NewMockK8S()
-	k8s.On("GetSuspendableNamespace", "foo").Return(NewSuspendableNamespace("foo", false), nil)
+	k8s.On("GetSuspendableNamespace", "foo").Return(NewSuspendableNamespace("foo", true), nil)
 
 	err := cliConfig{namespaces: []string{"foo"}}.suspend(factory)
 
@@ -38,7 +38,7 @@ func (s *Unittest) TestSuspendSkip() {
 func (s *Unittest) TestSuspendEmptyNamespace() {
 	k8s, factory := NewMockK8S()
 	actions := MockStateFileActions{}
-	k8s.On("GetSuspendableNamespace", "foo").Return(NewSuspendableNamespace("foo", true), nil)
+	k8s.On("GetSuspendableNamespace", "foo").Return(NewSuspendableNamespace("foo", false), nil)
 	k8s.On("GetDeployments", "foo").Return(map[string]Suspendable{}, nil)
 	k8s.On("GetStatefulSets", "foo").Return(map[string]Suspendable{}, nil)
 	k8s.On("CreateStateFile", "foo", mock.Anything).Return(&actions, nil)
@@ -62,7 +62,7 @@ func (s *Unittest) TestSuspendAllNamespacesError() {
 
 func (s *Unittest) TestSuspendAllNamespaces() {
 	k8s, factory := NewMockK8S()
-	k8s.On("GetSuspendableNamespaces").Return([]SuspendableNamespace{NewSuspendableNamespace("bar", false)}, nil)
+	k8s.On("GetSuspendableNamespaces").Return([]SuspendableNamespace{NewSuspendableNamespace("bar", true)}, nil)
 
 	err := cliConfig{allNamespaces: true}.suspend(factory)
 
@@ -72,7 +72,7 @@ func (s *Unittest) TestSuspendAllNamespaces() {
 
 func (s *Unittest) TestDontSuspendAutoprotected() {
 	k8s, factory := NewMockK8S()
-	k8s.On("GetSuspendableNamespaces").Return([]SuspendableNamespace{NewSuspendableNamespace("kube-system", true)}, nil)
+	k8s.On("GetSuspendableNamespaces").Return([]SuspendableNamespace{NewSuspendableNamespace("kube-system", false)}, nil)
 
 	err := cliConfig{allNamespaces: true}.suspend(factory)
 
@@ -118,7 +118,7 @@ func (s *Unittest) TestWakeBrokenK8SFactory() {
 
 func (s *Unittest) TestWakeBrokenK8S() {
 	k8s, factory := NewMockK8S()
-	k8s.On("GetSuspendableNamespace", "foo").Return(NewSuspendableNamespace("foo", true), nil)
+	k8s.On("GetSuspendableNamespace", "foo").Return(NewSuspendableNamespace("foo", false), nil)
 	k8s.On("GetStateFile", "foo").Return((*SuspendStateFile)(nil), (*MockStateFileActions)(nil), errExpected)
 
 	err := cliConfig{namespaces: []string{"foo"}}.wake(factory)
@@ -130,7 +130,7 @@ func (s *Unittest) TestWakeBrokenK8S() {
 func (s *Unittest) TestWakeEmptyNamespace() {
 	k8s, factory := NewMockK8S()
 	actions := MockStateFileActions{}
-	k8s.On("GetSuspendableNamespace", "foo").Return(NewSuspendableNamespace("foo", true), nil)
+	k8s.On("GetSuspendableNamespace", "foo").Return(NewSuspendableNamespace("foo", false), nil)
 	k8s.On("GetStateFile", "foo").Return(&SuspendStateFile{finished: true}, &actions, nil)
 	actions.On("Delete").Return(nil)
 

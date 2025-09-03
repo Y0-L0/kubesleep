@@ -5,8 +5,6 @@ import (
 	"slices"
 )
 
-var PROTECTED_NAMESPACES = []string{"default", "kube-node-lease", "kube-public", "kube-system", "ingress", "istio", "local-path"}
-
 type cliConfig struct {
 	namespaces    []string
 	force         bool
@@ -25,6 +23,22 @@ func (c cliConfig) validate() {
 	}
 }
 
+func (c cliConfig) getNamespaces(k8s K8S) ([]SuspendableNamespace, error) {
+	if c.allNamespaces {
+		return k8s.GetSuspendableNamespaces()
+	}
+
+	var namespaces []SuspendableNamespace
+	for _, n := range c.namespaces {
+		ns, err := k8s.GetSuspendableNamespace(n)
+		if err != nil {
+			return nil, err
+		}
+		namespaces = append(namespaces, ns)
+	}
+	return namespaces, nil
+}
+
 func (c cliConfig) suspend(k8sFactory func() (K8S, error)) error {
 	c.validate()
 
@@ -32,30 +46,20 @@ func (c cliConfig) suspend(k8sFactory func() (K8S, error)) error {
 	if err != nil {
 		return err
 	}
-	var namespaces []SuspendableNamespace
-	if c.allNamespaces {
-		namespaces, err = k8s.GetSuspendableNamespaces()
-		if err != nil {
-			return err
-		}
-	} else {
-		for _, n := range c.namespaces {
-			ns, err := k8s.GetSuspendableNamespace(n)
-			if err != nil {
-				return err
-			}
-			namespaces = append(namespaces, ns)
-		}
+
+	namespaces, err := c.getNamespaces(k8s)
+	if err != nil {
+		return err
 	}
 
 	for _, ns := range namespaces {
-		if slices.Contains(PROTECTED_NAMESPACES, ns.Name()) && (c.allNamespaces || !c.force) {
-			slog.Info("Skipping automatically protected namespace", "namespace", ns.Name(), "force", c.force)
+		if ns.autoProtected() && (c.allNamespaces || !c.force) {
+			slog.Info("Skipping automatically protected namespace", "namespace", ns.Name(), "autoProtected", ns.autoProtected(), "force", c.force)
 			continue
 		}
 
-		if !ns.Suspendable() && !c.force {
-			slog.Info("Skipping manually protected namespace", "namespace", ns.Name(), "force", c.force, "Suspendable", ns.Suspendable())
+		if ns.Protected() && !c.force {
+			slog.Info("Skipping manually protected namespace", "namespace", ns.Name(), "force", c.force, "Protected", ns.Protected())
 			continue
 		}
 		err = ns.suspend(k8s)
