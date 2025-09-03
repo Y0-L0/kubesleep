@@ -17,6 +17,7 @@ type SuspendableNamespace interface {
 	autoProtected() bool
 	suspend(context.Context, K8S) error
 	wake(context.Context, K8S) error
+	status(context.Context, K8S) (string, error)
 }
 
 type suspendableNamespaceImpl struct {
@@ -107,4 +108,19 @@ func (n *suspendableNamespaceImpl) suspend(ctx context.Context, k8s K8S) error {
 
 	stateFile.finished = true
 	return actions.Update(ctx, stateFile.Write())
+}
+
+func (n *suspendableNamespaceImpl) status(ctx context.Context, k8s K8S) (string, error) {
+	var notFound StatefileNotFoundError
+	stateFile, _, err := k8s.GetStateFile(ctx, n.name)
+	if errors.As(err, &notFound) {
+		return "running", nil
+	}
+	if err != nil {
+		return "", err
+	}
+	if stateFile.finished {
+		return "suspended", nil
+	}
+	return "suspending or suspension aborted", nil
 }

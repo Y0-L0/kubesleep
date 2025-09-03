@@ -100,3 +100,33 @@ func (c cliConfig) wake(ctx context.Context, k8sFactory func() (K8S, error)) err
 	}
 	return nil
 }
+
+type status struct {
+	name      string
+	status    string
+	protected bool
+}
+
+func (c cliConfig) status(ctx context.Context, k8sFactory func() (K8S, error)) ([]status, error) {
+	c.validate()
+	k8s, err := k8sFactory()
+	if err != nil {
+		return nil, err
+	}
+
+	namespaces, err := c.getNamespaces(ctx, k8s)
+	if err != nil {
+		return nil, err
+	}
+
+	var table []status
+	for _, namespace := range namespaces {
+		statusString, err := namespace.status(ctx, k8s)
+		if err != nil {
+			return nil, err
+		}
+		row := status{namespace.Name(), statusString, namespace.Protected()}
+		table = append(table, row)
+	}
+	return table, nil
+}

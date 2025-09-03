@@ -1,8 +1,11 @@
 package kubesleep
 
 import (
+	"fmt"
+	"io"
 	"log/slog"
 	"os"
+	"text/tabwriter"
 
 	"github.com/Y0-L0/kubesleep/kubesleep/version"
 	"github.com/spf13/cobra"
@@ -114,6 +117,40 @@ func NewParser(args []string, k8sFactory func() (K8S, error), setupLogging func(
 		},
 	}
 
-	rootCmd.AddCommand(versionCmd, suspendCmd, wakeCmd)
+	statusCmd := &cobra.Command{
+		Use:   "status",
+		Short: "Display the suspend status of kubernetes namespaces",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			slog.Debug("Parsed cli arguments for the status subcommand", "config", config)
+			if !config.allNamespaces && len(config.namespaces) == 0 {
+				cmd.PrintErrln("either --all-namespaces or --namespace (-n) must be specified")
+				return CliArgumentError("missing namespace or all-namespaces argument")
+			}
+			statusTable, err := config.status(cmd.Context(), k8sFactory)
+			if err != nil {
+				fmt.Fprintf(cmd.ErrOrStderr(), "Error: %s\n", err)
+				return err
+			}
+			printStatus(statusTable, cmd.OutOrStdout())
+			return nil
+		},
+	}
+	statusCmd.Flags().BoolVar(
+		&config.allNamespaces,
+		"all-namespaces",
+		false,
+		"Suspend all unprotected namespaces",
+	)
+
+	rootCmd.AddCommand(versionCmd, suspendCmd, wakeCmd, statusCmd)
 	return rootCmd, config
+}
+
+func printStatus(statusTable []status, stdout io.Writer) {
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(w, "name\tstatus\tprotected\t")
+	for _, row := range statusTable {
+		fmt.Fprintf(w, "%s\t%s\t%t\t\n", row.name, row.status, row.protected)
+	}
+	w.Flush()
 }

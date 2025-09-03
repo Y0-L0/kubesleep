@@ -3,6 +3,7 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	kubesleep "github.com/Y0-L0/kubesleep/kubesleep"
 	corev1 "k8s.io/api/core/v1"
@@ -37,11 +38,18 @@ func (s *StateFileActionsImpl) Delete(ctx context.Context) error {
 }
 
 func (k8s *K8Simpl) GetStateFile(ctx context.Context, namespace string) (*kubesleep.SuspendState, kubesleep.SuspendStateActions, error) {
+	slog.Debug("Getting state file", "namespace", namespace)
 	configmap, err := k8s.clientset.CoreV1().ConfigMaps(namespace).Get(
 		ctx,
 		STATE_FILE_NAME,
 		metav1.GetOptions{},
 	)
+	slog.Debug("State file configmap", "namespace", namespace, "configmap", configmap)
+	if apierrors.IsNotFound(err) {
+		return nil, nil, kubesleep.StatefileNotFoundError(
+			fmt.Sprintf("statefile configmap %s not found", STATE_FILE_NAME),
+		)
+	}
 	if err != nil {
 		return nil, nil, err
 	}

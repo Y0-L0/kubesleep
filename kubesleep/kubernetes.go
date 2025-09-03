@@ -19,3 +19,7 @@ type K8SFactory func() (K8S, error)
 type StatefileAlreadyExistsError string
 
 func (e StatefileAlreadyExistsError) Error() string { return string(e) }
+
+type StatefileNotFoundError string
+
+func (e StatefileNotFoundError) Error() string { return string(e) }
