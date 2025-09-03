@@ -68,14 +68,14 @@ func (c cliConfig) suspend(k8sFactory func() (K8S, error)) error {
 
 func (c cliConfig) wake(k8sFactory func() (K8S, error)) error {
 	c.validate()
+	k8s, err := k8sFactory()
+	if err != nil {
+		return err
+	}
 
 	for _, namespace := range c.namespaces {
 		if namespace == "" {
 			panic("Invalid namespace value")
-		}
-		k8s, err := k8sFactory()
-		if err != nil {
-			return err
 		}
 		ns, err := k8s.GetSuspendableNamespace(namespace)
 		if err != nil {

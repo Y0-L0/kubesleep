@@ -1,12 +1,15 @@
 package kubesleep
 
 import (
-	"fmt"
 	"log/slog"
 	"os"
 
 	"github.com/spf13/cobra"
 )
+
+type CliArgumentError string
+
+func (e CliArgumentError) Error() string { return string(e) }
 
 func SetupLogging(logLevel slog.Level) {
 	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
@@ -17,15 +20,17 @@ func SetupLogging(logLevel slog.Level) {
 	slog.SetDefault(logger)
 }
 
-func newParser(args []string, k8sFactory func() (K8S, error), setupLogging func(slog.Level)) (*cobra.Command, *cliConfig) {
+func NewParser(args []string, k8sFactory func() (K8S, error), setupLogging func(slog.Level)) (*cobra.Command, *cliConfig) {
 	slog.Debug("raw cli arguments", "args", args)
 
 	config := &cliConfig{}
 	var verbosity int
 
 	rootCmd := &cobra.Command{
-		Use:   "kubesleep",
-		Short: "kubesleep can sleep and wake kubernetes namespaces by scaling workloads down to zero and back up",
+		Use:           "kubesleep",
+		Short:         "kubesleep can sleep and wake kubernetes namespaces by scaling workloads down to zero and back up",
+		SilenceErrors: true,
+		SilenceUsage:  true,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			var logLevel slog.Level
 			switch verbosity {
@@ -39,7 +44,6 @@ func newParser(args []string, k8sFactory func() (K8S, error), setupLogging func(
 			setupLogging(logLevel)
 		},
 	}
-
 	rootCmd.SetArgs(args[1:])
 
 	rootCmd.PersistentFlags().CountVarP(
@@ -48,6 +52,13 @@ func newParser(args []string, k8sFactory func() (K8S, error), setupLogging func(
 		"v",
 		"Increase the log level. Can be specified multiple times.",
 	)
+	rootCmd.PersistentFlags().StringArrayVarP(
+		&config.namespaces,
+		"namespace",
+		"n",
+		nil,
+		"Kubernetes namespace. Can be specified multiple times",
+	)
 
 	suspendCmd := &cobra.Command{
 		Use:   "suspend",
@@ -55,21 +66,16 @@ func newParser(args []string, k8sFactory func() (K8S, error), setupLogging func(
 		RunE: func(cmd *cobra.Command, args []string) error {
 			slog.Debug("Parsed cli arguments for the sleep subcommand", "config", config)
 			if !config.allNamespaces && len(config.namespaces) == 0 {
-				return fmt.Errorf("either --all-namespaces or --namespace (-n) must be specified")
+				cmd.PrintErrln("either --all-namespaces or --namespace (-n) must be specified")
+				return CliArgumentError("missing namespace or all-namespaces argument")
 			}
 			if config.allNamespaces && (len(config.namespaces) > 0 || config.force) {
-				return fmt.Errorf("--all-namespaces cannot be combined with --namespace or --force")
+				cmd.PrintErrln("--all-namespaces cannot be combined with --namespace or --force")
+				return CliArgumentError("missing namespace or all-namespaces argument")
 			}
 			return config.suspend(k8sFactory)
 		},
 	}
-	suspendCmd.Flags().StringArrayVarP(
-		&config.namespaces,
-		"namespace",
-		"n",
-		nil,
-		"Kubernetes namespace. Can be specified multiple times",
-	)
 	suspendCmd.Flags().BoolVarP(
 		&config.force,
 		"force",
@@ -84,34 +90,19 @@ func newParser(args []string, k8sFactory func() (K8S, error), setupLogging func(
 		"Suspend all unprotected namespaces",
 	)
 
-	resumeCmd := &cobra.Command{
+	wakeCmd := &cobra.Command{
 		Use:   "wake",
 		Short: "Wake a kubernetes namespace back up",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			slog.Debug("Parsed cli arguments for the wake subcommand", "config", config)
+			if len(config.namespaces) == 0 {
+				cmd.PrintErrln("--namespace (-n) must be specified")
+				return CliArgumentError("missing namespace argument")
+			}
 			return config.wake(k8sFactory)
 		},
 	}
-	resumeCmd.Flags().StringArrayVarP(
-		&config.namespaces,
-		"namespace",
-		"n",
-		nil,
-		"Kubernetes namespace. Can be specified multiple times",
-	)
-	resumeCmd.MarkFlagRequired("namespace")
 
-	rootCmd.AddCommand(suspendCmd, resumeCmd)
+	rootCmd.AddCommand(suspendCmd, wakeCmd)
 	return rootCmd, config
-}
-
-func Main(args []string, k8sFactory func() (K8S, error)) error {
-	command, _ := newParser(args, k8sFactory, SetupLogging)
-
-	err := command.Execute()
-	if err != nil {
-		return err
-	}
-
-	return nil
 }

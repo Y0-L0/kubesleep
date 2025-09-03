@@ -6,13 +6,19 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+func NewTestParser(args []string, k8sFactory K8SFactory) (*cliConfig, error) {
+	command, config := NewParser(args, k8sFactory, SetupLogging)
+	err := command.Execute()
+	return config, err
+}
+
 func (s *Unittest) TestMainHelp() {
-	err := Main([]string{"kubesleep", "--help"}, nil)
+	_, err := NewTestParser([]string{"kubesleep", "--help"}, nil)
 	s.Require().NoError(err)
 }
 
 func (s *Unittest) TestMainError() {
-	err := Main([]string{"kubesleep", "invalidArgument"}, nil)
+	_, err := NewTestParser([]string{"kubesleep", "blub"}, nil)
 	s.Require().Error(err)
 }
 
@@ -67,7 +73,7 @@ func (s *Unittest) TestValidCliArguments() {
 			k8s, factory := NewMockK8S()
 			k8s.On("GetSuspendableNamespace", mock.Anything).Return(&suspendableNamespaceImpl{}, errExpected)
 
-			command, config := newParser(
+			command, config := NewParser(
 				testCase.args,
 				factory,
 				SetupLogging,
@@ -98,7 +104,7 @@ func (s *Unittest) TestInvalidCliArguments() {
 
 	for _, testCase := range tests {
 		s.Run(testCase.name, func() {
-			command, config := newParser(testCase.args, nil, SetupLogging)
+			command, config := NewParser(testCase.args, nil, SetupLogging)
 
 			err := command.Execute()
 
@@ -132,7 +138,7 @@ func (s *Unittest) TestLogLevel() {
 
 			mockSetupLogging := func(l slog.Level) { logLevel = l }
 
-			command, config := newParser(testCase.args, factory, mockSetupLogging)
+			command, config := NewParser(testCase.args, factory, mockSetupLogging)
 			err := command.Execute()
 
 			s.Require().Equal(errExpected, err)
