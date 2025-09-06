@@ -55,9 +55,23 @@ changelog:
       - "^docs:"
       - "^test:"
 
-# release:
-  # footer: >-
-  #
-  #   ---
-  #
-  #   Released by [GoReleaser](https://github.com/goreleaser/goreleaser).
+dockers:
+  - id: kubesleep-amd64
+    ids:
+      - kubesleep
+    dockerfile: Dockerfile.distroless
+    use: buildx
+    goos: linux
+    goarch: amd64
+    skip_push: false
+    image_templates:
+      - ghcr.io/y0-l0/kubesleep:{{ .Version }}
+      - ghcr.io/y0-l0/kubesleep:latest
+    build_flag_templates:
+      - --platform=linux/amd64
+      - --label=org.opencontainers.image.title={{ .ProjectName }}
+      - --label=org.opencontainers.image.version={{ .Version }}
+      - --label=org.opencontainers.image.revision={{ .ShortCommit }}
+      - --label=org.opencontainers.image.created={{ .Date }}
+
+# profiles removed; a single docker definition is used with env-gated --load
