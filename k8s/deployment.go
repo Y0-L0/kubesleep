@@ -26,7 +26,7 @@ func (k8s K8Simpl) GetDeployments(namespace string) (map[string]kubesleep.Suspen
 			*deployment.Spec.Replicas,
 			suspend,
 		)
-		slog.Debug("parsed Suspendable", "Suspendable", s)
+		slog.Debug("parsed Suspendable", "Suspendable", s, "namespace", namespace)
 		suspendables[s.Identifier()] = s
 	}
 
@@ -53,7 +53,7 @@ func (k8s K8Simpl) suspendDeployment(namespace string, name string) func() error
 		if err != nil {
 			return err
 		}
-		slog.Info("Suspended Deployment", "name", scalable.Name)
+		slog.Info("Suspended Deployment", "name", scalable.Name, "namespace", namespace)
 		return nil
 	}
 }
@@ -77,6 +77,6 @@ func (k8s K8Simpl) ScaleDeployment(namespace string, name string, Replicas int32
 		return err
 	}
 
-	slog.Info("Woke up Deployment", "name", name)
+	slog.Info("Woke up Deployment", "namespace", namespace, "name", name)
 	return nil
 }

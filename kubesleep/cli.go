@@ -64,7 +64,7 @@ func NewParser(args []string, k8sFactory func() (K8S, error), setupLogging func(
 		Use:   "suspend",
 		Short: "Suspend one or multiple kubernetes namespaces.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			slog.Debug("Parsed cli arguments for the sleep subcommand", "config", config)
+			slog.Debug("Parsed cli arguments for the suspend subcommand", "config", config)
 			if !config.allNamespaces && len(config.namespaces) == 0 {
 				cmd.PrintErrln("either --all-namespaces or --namespace (-n) must be specified")
 				return CliArgumentError("missing namespace or all-namespaces argument")

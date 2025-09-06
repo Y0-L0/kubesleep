@@ -33,14 +33,14 @@ func (s Suspendable) wake(namespace string, k8s K8S) error {
 	switch s.manifestType {
 	case Deplyoment:
 		if err := k8s.ScaleDeployment(namespace, s.name, s.Replicas); err != nil {
-			return err
+			return fmt.Errorf("Failed to scale Deployment: %s in Namespace: %s, %w", s.name, namespace, err)
 		}
 	case StatefulSet:
 		if err := k8s.ScaleStatefulSet(namespace, s.name, s.Replicas); err != nil {
-			return err
+			return fmt.Errorf("Failed to scale StatefulSet: %s in Namespace: %s, %w", s.name, namespace, err)
 		}
 	default:
-		return fmt.Errorf("Suspendable: %s with invalid namifestType: %d", s.name, s.manifestType)
+		return fmt.Errorf("Suspendable: %s in namespace: %s with invalid namifestType: %d", s.name, namespace, s.manifestType)
 	}
 	return nil
 }

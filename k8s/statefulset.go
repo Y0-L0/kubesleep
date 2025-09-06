@@ -26,7 +26,7 @@ func (k8s K8Simpl) GetStatefulSets(namespace string) (map[string]kubesleep.Suspe
 			*statefulSet.Spec.Replicas,
 			suspend,
 		)
-		slog.Debug("parsed Suspendable", "Suspendable", s)
+		slog.Debug("parsed Suspendable", "Suspendable", s, "namespace", namespace)
 		suspendables[s.Identifier()] = s
 	}
 
@@ -53,7 +53,7 @@ func (k8s K8Simpl) suspendStatefulSet(namespace string, name string) func() erro
 		if err != nil {
 			return err
 		}
-		slog.Info("Suspended Deployment", "name", scalable.Name)
+		slog.Info("Suspended StatefulSet", "name", scalable.Name, "namespace", namespace)
 		return nil
 	}
 }
@@ -77,6 +77,6 @@ func (k8s K8Simpl) ScaleStatefulSet(namespace string, name string, Replicas int3
 		return err
 	}
 
-	slog.Info("Woke up StatefulSet", "name", name)
+	slog.Info("Woke up StatefulSet", "name", name, "namespace", namespace)
 	return nil
 }

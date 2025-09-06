@@ -68,12 +68,12 @@ func buildSuspendableNamespace(kubernetesNamespace corev1.Namespace) kubesleep.S
 		slog.Debug("Namespace has no relevant annotations", "namespace", kubernetesNamespace.Name)
 	}
 
-	slog.Debug("namespace manifest", "suspendable", protected, "kubernetesNamespace", kubernetesNamespace)
+	slog.Debug("namespace manifest", "protected", protected, "kubernetesNamespace", kubernetesNamespace)
 	namespaceObj := kubesleep.NewSuspendableNamespace(
 		kubernetesNamespace.Name,
 		protected,
 	)
-	slog.Info("parsed namespace", "namespace", namespaceObj)
+	slog.Debug("parsed namespace", "namespace", namespaceObj)
 	return namespaceObj
 
 }
