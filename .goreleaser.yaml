@@ -68,7 +68,7 @@ dockers:
       - ghcr.io/y0-l0/kubesleep:{{ .Version }}
       - ghcr.io/y0-l0/kubesleep:latest
     build_flag_templates:
-      - '{{- if .IsSnapshot }}--load{{ end }}'
+      # - '{{- if .IsSnapshot }}--load{{ end }}'
       - --platform=linux/amd64
       - --label=org.opencontainers.image.title={{ .ProjectName }}
       - --label=org.opencontainers.image.version={{ .Version }}
