@@ -1,0 +1,22 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: kubesleep-suspend
+  namespace: kubesleep
+spec:
+  schedule: "0 4 * * 6"  # Every Saturday at 04:00
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 5
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 5
+      template:
+        spec:
+          serviceAccountName: kubesleep
+          restartPolicy: Never
+          containers:
+            - name: kubesleep
+              image: kubesleep:latest
+              imagePullPolicy: IfNotPresent
+              args: ["suspend", "--all-namespaces", "-vvv"]

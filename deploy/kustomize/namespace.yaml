@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kubesleep
+  annotations:
+    kubesleep.xyz/do-not-suspend: "true"
+
