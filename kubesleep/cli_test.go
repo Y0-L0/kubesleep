@@ -47,13 +47,12 @@ func (s *Unittest) TestValidCliArguments() {
 			"suspend",
 			&cliConfig{[]string{"test-ns", "other-test-ns"}, false, false},
 		},
-		// TODO: make the --all-namespaces argument functional
-		// {
-		// 	"suspend all namespaces",
-		// 	[]string{"kubesleep", "suspend", "--all-namespaces"},
-		// 	"suspend",
-		// 	&cliConfig{nil, false, true},
-		// },
+		{
+			"suspend all namespaces",
+			[]string{"kubesleep", "suspend", "--all-namespaces"},
+			"suspend",
+			&cliConfig{nil, false, true},
+		},
 		{
 			"suspend with force",
 			[]string{"kubesleep", "suspend", "-n", "test-ns", "-f"},
@@ -71,7 +70,11 @@ func (s *Unittest) TestValidCliArguments() {
 	for _, testCase := range tests {
 		s.Run(testCase.name, func() {
 			k8s, factory := NewMockK8S()
-			k8s.On("GetSuspendableNamespace", mock.Anything).Return(&suspendableNamespaceImpl{}, errExpected)
+			if testCase.config.allNamespaces {
+				k8s.On("GetSuspendableNamespaces").Return([]SuspendableNamespace{}, errExpected)
+			} else {
+				k8s.On("GetSuspendableNamespace", mock.Anything).Return(&suspendableNamespaceImpl{}, errExpected)
+			}
 
 			command, config := NewParser(
 				testCase.args,
@@ -81,6 +84,40 @@ func (s *Unittest) TestValidCliArguments() {
 			err := command.Execute()
 			s.Require().Equal(errExpected, err)
 			k8s.AssertExpectations(s.T())
+
+			s.Equal("kubesleep", command.Name())
+			s.Equal(testCase.config, config)
+		})
+	}
+}
+
+func (s *Unittest) TestVersionSubcommand() {
+	tests := []struct {
+		name   string
+		args   []string
+		config *cliConfig
+	}{
+		{
+			"print version information",
+			[]string{"kubesleep", "version"},
+			&cliConfig{nil, false, false},
+		},
+		{
+			"print version information ignoring any namespace arguments",
+			[]string{"kubesleep", "version", "-n", "test-ns", "-n", "other-test-ns"},
+			&cliConfig{[]string{"test-ns", "other-test-ns"}, false, false},
+		},
+	}
+
+	for _, testCase := range tests {
+		s.Run(testCase.name, func() {
+			command, config := NewParser(
+				testCase.args,
+				nil,
+				SetupLogging,
+			)
+			err := command.Execute()
+			s.Require().NoError(err)
 
 			s.Equal("kubesleep", command.Name())
 			s.Equal(testCase.config, config)

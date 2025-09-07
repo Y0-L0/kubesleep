@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/Y0-L0/kubesleep/kubesleep/version"
 	"github.com/spf13/cobra"
 )
 
@@ -45,6 +46,14 @@ func NewParser(args []string, k8sFactory func() (K8S, error), setupLogging func(
 		},
 	}
 	rootCmd.SetArgs(args[1:])
+
+	versionCmd := &cobra.Command{
+		Use:   "version",
+		Short: "Print version information",
+		Run: func(cmd *cobra.Command, args []string) {
+			version.BuildInfo(cmd.OutOrStdout())
+		},
+	}
 
 	rootCmd.PersistentFlags().CountVarP(
 		&verbosity,
@@ -103,6 +112,6 @@ func NewParser(args []string, k8sFactory func() (K8S, error), setupLogging func(
 		},
 	}
 
-	rootCmd.AddCommand(suspendCmd, wakeCmd)
+	rootCmd.AddCommand(versionCmd, suspendCmd, wakeCmd)
 	return rootCmd, config
 }

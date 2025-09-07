@@ -27,9 +27,11 @@ builds:
       - amd64
       - arm64
     ldflags:
-      - -X kubesleep/buildinfo.Version={{ .Version }}
-      - -X kubesleep/buildinfo.Commit={{ .ShortCommit }}
-      - -X kubesleep/buildinfo.BuildTime={{ .Date }}
+      - -X github.com/Y0-L0/kubesleep/kubesleep/version.Version={{ .Version }}
+      - -X github.com/Y0-L0/kubesleep/kubesleep/version.Commit={{ .ShortCommit }}
+      - -X github.com/Y0-L0/kubesleep/kubesleep/version.BuildDate={{ .Date }}
+      - -X github.com/Y0-L0/kubesleep/kubesleep/version.TreeState={{ if .IsGitDirty }}dirty{{ else }}clean{{ end }}
+
 
 archives:
   - formats: [tar.gz]
