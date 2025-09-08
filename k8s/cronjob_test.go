@@ -64,12 +64,12 @@ func (s *Integrationtest) TestGetCronJobs() {
 	s.Require().NoError(err)
 	defer delete()
 
-	sus, err := s.k8s.getCronJobs("get-cronjobs")
+	suspendables, err := s.k8s.GetSuspendables("get-cronjobs")
 	s.Require().NoError(err)
-	s.Require().NotEmpty(sus)
+	s.Require().NotEmpty(suspendables)
 
 	// simplify for easier comparison
-	actual := sus["2:test-cronjob"]
+	actual := suspendables["2:test-cronjob"]
 	actual.Suspend = nil
 
 	s.Require().Equal(
@@ -92,18 +92,18 @@ func (s *Integrationtest) TestSuspendCronJob() {
 	s.Require().NoError(err)
 	defer delete()
 
-	sus, err := s.k8s.getCronJobs("suspend-cronjobs")
+	suspendables, err := s.k8s.GetSuspendables("suspend-cronjobs")
 	s.Require().NoError(err)
-	s.Require().NotEmpty(sus)
-	s.Require().Equal(int32(1), sus["2:test-cronjob"].Replicas)
+	s.Require().NotEmpty(suspendables)
+	s.Require().Equal(int32(1), suspendables["2:test-cronjob"].Replicas)
 
-	err = sus["2:test-cronjob"].Suspend()
+	err = s.k8s.ScaleSuspendable("suspend-cronjobs", kubesleep.CronJob, "test-cronjob", 0)
 	s.Require().NoError(err)
 
-	sus, err = s.k8s.getCronJobs("suspend-cronjobs")
+	suspendables, err = s.k8s.GetSuspendables("suspend-cronjobs")
 	s.Require().NoError(err)
-	s.Require().NotEmpty(sus)
-	s.Require().Equal(int32(0), sus["2:test-cronjob"].Replicas)
+	s.Require().NotEmpty(suspendables)
+	s.Require().Equal(int32(0), suspendables["2:test-cronjob"].Replicas)
 }
 
 func (s *Integrationtest) TestScaleCronJob() {
@@ -115,11 +115,11 @@ func (s *Integrationtest) TestScaleCronJob() {
 	s.Require().NoError(err)
 	defer delete()
 
-	err = s.k8s.scaleCronJob("scale-cronjobs", "test-cronjob", 1)
+	err = s.k8s.ScaleSuspendable("scale-cronjobs", kubesleep.CronJob, "test-cronjob", 1)
 	s.Require().NoError(err)
 
-	sus, err := s.k8s.getCronJobs("scale-cronjobs")
+	suspendables, err := s.k8s.GetSuspendables("scale-cronjobs")
 	s.Require().NoError(err)
-	s.Require().NotEmpty(sus)
-	s.Require().Equal(int32(1), sus["2:test-cronjob"].Replicas)
+	s.Require().NotEmpty(suspendables)
+	s.Require().Equal(int32(1), suspendables["2:test-cronjob"].Replicas)
 }

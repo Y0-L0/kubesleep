@@ -66,12 +66,12 @@ func (s *Integrationtest) TestGetDeployment() {
 	s.Require().NoError(err)
 	defer delete()
 
-	sus, err := s.k8s.getDeployments("get-deployments")
+	suspendables, err := s.k8s.GetSuspendables("get-deployments")
 	s.Require().NoError(err)
-	s.Require().NotEmpty(sus)
+	s.Require().NotEmpty(suspendables)
 
 	// simplify for easier comparison
-	actual := sus["0:test-deployment"]
+	actual := suspendables["0:test-deployment"]
 	actual.Suspend = nil
 	s.Require().Equal(
 		kubesleep.NewSuspendable(
@@ -93,18 +93,18 @@ func (s *Integrationtest) TestSuspendDeployment() {
 	s.Require().NoError(err)
 	defer delete()
 
-	sus, err := s.k8s.getDeployments("suspend-deployments")
+	suspendables, err := s.k8s.GetSuspendables("suspend-deployments")
 	s.Require().NoError(err)
-	s.Require().NotEmpty(sus)
-	s.Require().Equal(int32(2), sus["0:test-deployment"].Replicas)
+	s.Require().NotEmpty(suspendables)
+	s.Require().Equal(int32(2), suspendables["0:test-deployment"].Replicas)
 
-	err = sus["0:test-deployment"].Suspend()
+	err = s.k8s.ScaleSuspendable("suspend-deployments", kubesleep.Deplyoment, "test-deployment", 0)
 	s.Require().NoError(err)
 
-	sus, err = s.k8s.getDeployments("suspend-deployments")
+	suspendables, err = s.k8s.GetSuspendables("suspend-deployments")
 	s.Require().NoError(err)
-	s.Require().NotEmpty(sus)
-	s.Require().Equal(int32(0), sus["0:test-deployment"].Replicas)
+	s.Require().NotEmpty(suspendables)
+	s.Require().Equal(int32(0), suspendables["0:test-deployment"].Replicas)
 }
 
 func (s *Integrationtest) TestScaleDeployment() {
@@ -116,10 +116,10 @@ func (s *Integrationtest) TestScaleDeployment() {
 	s.Require().NoError(err)
 	defer delete()
 
-	err = s.k8s.scaleDeployment("scale-deployments", "test-deployment", int32(2))
+	err = s.k8s.ScaleSuspendable("scale-deployments", kubesleep.Deplyoment, "test-deployment", int32(2))
 
-	sus, err := s.k8s.getDeployments("scale-deployments")
+	suspendables, err := s.k8s.GetSuspendables("scale-deployments")
 	s.Require().NoError(err)
-	s.Require().NotEmpty(sus)
-	s.Require().Equal(int32(2), sus["0:test-deployment"].Replicas)
+	s.Require().NotEmpty(suspendables)
+	s.Require().Equal(int32(2), suspendables["0:test-deployment"].Replicas)
 }
