@@ -93,6 +93,13 @@ func (n *suspendableNamespaceImpl) suspend(k8s K8S) error {
 	}
 	maps.Copy(suspendables, sus)
 
+	// Include CronJobs as suspendables by setting spec.suspend=true
+	jobs, err := k8s.GetCronJobs(n.name)
+	if err != nil {
+		return err
+	}
+	maps.Copy(suspendables, jobs)
+
 	stateFile, actions, err := n.ensureStateFile(k8s, &SuspendStateFile{
 		suspendables: suspendables,
 		finished:     false,

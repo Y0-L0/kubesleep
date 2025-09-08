@@ -7,6 +7,7 @@ type ManifestType int
 const (
 	Deplyoment ManifestType = iota
 	StatefulSet
+	CronJob
 )
 
 type Suspendable struct {
@@ -38,6 +39,10 @@ func (s Suspendable) wake(namespace string, k8s K8S) error {
 	case StatefulSet:
 		if err := k8s.ScaleStatefulSet(namespace, s.name, s.Replicas); err != nil {
 			return fmt.Errorf("Failed to scale StatefulSet: %s in Namespace: %s, %w", s.name, namespace, err)
+		}
+	case CronJob:
+		if err := k8s.ScaleCronJob(namespace, s.name, s.Replicas); err != nil {
+			return fmt.Errorf("Failed to scale CronJob: %s in Namespace: %s, %w", s.name, namespace, err)
 		}
 	default:
 		return fmt.Errorf("Suspendable: %s in namespace: %s with invalid namifestType: %d", s.name, namespace, s.manifestType)

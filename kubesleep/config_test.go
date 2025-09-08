@@ -41,6 +41,7 @@ func (s *Unittest) TestSuspendEmptyNamespace() {
 	k8s.On("GetSuspendableNamespace", "foo").Return(NewSuspendableNamespace("foo", false), nil)
 	k8s.On("GetDeployments", "foo").Return(map[string]Suspendable{}, nil)
 	k8s.On("GetStatefulSets", "foo").Return(map[string]Suspendable{}, nil)
+	k8s.On("GetCronJobs", "foo").Return(map[string]Suspendable{}, nil)
 	k8s.On("CreateStateFile", "foo", mock.Anything).Return(&actions, nil)
 	actions.On("Update", mock.Anything).Return(nil)
 

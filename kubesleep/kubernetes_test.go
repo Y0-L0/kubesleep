@@ -60,12 +60,17 @@ func (m *mockK8S) DeleteStateFile(ns string) error {
 	return args.Error(0)
 }
 
+func (m *mockK8S) GetCronJobs(ns string) (map[string]Suspendable, error) {
+	args := m.Called(ns)
+	return args.Get(0).(map[string]Suspendable), args.Error(1)
+}
+
+func (m *mockK8S) ScaleCronJob(ns, name string, suspended int32) error {
+	args := m.Called(ns, name, suspended)
+	return args.Error(0)
+}
+
 func NewMockK8S() (*mockK8S, K8SFactory) {
 	k8s := &mockK8S{}
 	return k8s, func() (K8S, error) { return k8s, nil }
 }
-
-// func mockK8SFactory() (K8S, error) {
-// 	k8s := mockK8S{}
-// 	return &k8s, nil
-// }
