@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"testing"
 
+	kubesleep "github.com/Y0-L0/kubesleep/kubesleep"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -103,4 +104,14 @@ func testNamespace(name string, k8s *K8Simpl, doNotSuspend bool) (func() error, 
 
 func TestIntegration(t *testing.T) {
 	suite.Run(t, new(Integrationtest))
+}
+
+// getSuspendable fetches all suspendables from the given namespace,
+// asserts the call succeeds and the key exists, and returns the item.
+func (s *Integrationtest) getSuspendable(namespace, key string) kubesleep.Suspendable {
+	m, err := s.k8s.GetSuspendables(namespace)
+	s.Require().NoError(err)
+	sus, ok := m[key]
+	s.Require().True(ok, "suspendable with key %q not found in namespace %q", key, namespace)
+	return sus
 }

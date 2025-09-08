@@ -64,12 +64,7 @@ func (s *Integrationtest) TestGetCronJobs() {
 	s.Require().NoError(err)
 	defer delete()
 
-	suspendables, err := s.k8s.GetSuspendables("get-cronjobs")
-	s.Require().NoError(err)
-	s.Require().NotEmpty(suspendables)
-
-	// simplify for easier comparison
-	actual := suspendables["2:test-cronjob"]
+	actual := s.getSuspendable("get-cronjobs", "2:test-cronjob")
 	actual.Suspend = nil
 
 	s.Require().Equal(
@@ -92,18 +87,13 @@ func (s *Integrationtest) TestSuspendCronJob() {
 	s.Require().NoError(err)
 	defer delete()
 
-	suspendables, err := s.k8s.GetSuspendables("suspend-cronjobs")
-	s.Require().NoError(err)
-	s.Require().NotEmpty(suspendables)
-	s.Require().Equal(int32(1), suspendables["2:test-cronjob"].Replicas)
+	before := s.getSuspendable("suspend-cronjobs", "2:test-cronjob")
+	s.Require().Equal(int32(1), before.Replicas)
 
-	err = s.k8s.ScaleSuspendable("suspend-cronjobs", kubesleep.CronJob, "test-cronjob", 0)
-	s.Require().NoError(err)
+	s.Require().NoError(before.Suspend())
 
-	suspendables, err = s.k8s.GetSuspendables("suspend-cronjobs")
-	s.Require().NoError(err)
-	s.Require().NotEmpty(suspendables)
-	s.Require().Equal(int32(0), suspendables["2:test-cronjob"].Replicas)
+	actual := s.getSuspendable("suspend-cronjobs", "2:test-cronjob")
+	s.Require().Equal(int32(0), actual.Replicas)
 }
 
 func (s *Integrationtest) TestScaleCronJob() {
@@ -118,8 +108,6 @@ func (s *Integrationtest) TestScaleCronJob() {
 	err = s.k8s.ScaleSuspendable("scale-cronjobs", kubesleep.CronJob, "test-cronjob", 1)
 	s.Require().NoError(err)
 
-	suspendables, err := s.k8s.GetSuspendables("scale-cronjobs")
-	s.Require().NoError(err)
-	s.Require().NotEmpty(suspendables)
-	s.Require().Equal(int32(1), suspendables["2:test-cronjob"].Replicas)
+	actual := s.getSuspendable("scale-cronjobs", "2:test-cronjob")
+	s.Require().Equal(int32(1), actual.Replicas)
 }

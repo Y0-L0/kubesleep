@@ -66,12 +66,7 @@ func (s *Integrationtest) TestGetDeployment() {
 	s.Require().NoError(err)
 	defer delete()
 
-	suspendables, err := s.k8s.GetSuspendables("get-deployments")
-	s.Require().NoError(err)
-	s.Require().NotEmpty(suspendables)
-
-	// simplify for easier comparison
-	actual := suspendables["0:test-deployment"]
+	actual := s.getSuspendable("get-deployments", "0:test-deployment")
 	actual.Suspend = nil
 	s.Require().Equal(
 		kubesleep.NewSuspendable(
@@ -85,26 +80,21 @@ func (s *Integrationtest) TestGetDeployment() {
 }
 
 func (s *Integrationtest) TestSuspendDeployment() {
-	deleteNamespace, err := testNamespace("suspend-deployments", s.k8s, false)
+	deleteNamespace, err := testNamespace("suspend-deployments-via-suspendable", s.k8s, false)
 	s.Require().NoError(err)
 	defer deleteNamespace()
 
-	delete, err := CreateDeployment(*s.k8s, "suspend-deployments", "test-deployment", int32(2))
+	delete, err := CreateDeployment(*s.k8s, "suspend-deployments-via-suspendable", "test-deployment", int32(2))
 	s.Require().NoError(err)
 	defer delete()
 
-	suspendables, err := s.k8s.GetSuspendables("suspend-deployments")
-	s.Require().NoError(err)
-	s.Require().NotEmpty(suspendables)
-	s.Require().Equal(int32(2), suspendables["0:test-deployment"].Replicas)
+	before := s.getSuspendable("suspend-deployments-via-suspendable", "0:test-deployment")
+	s.Require().Equal(int32(2), before.Replicas)
 
-	err = s.k8s.ScaleSuspendable("suspend-deployments", kubesleep.Deplyoment, "test-deployment", 0)
-	s.Require().NoError(err)
+	s.Require().NoError(before.Suspend())
 
-	suspendables, err = s.k8s.GetSuspendables("suspend-deployments")
-	s.Require().NoError(err)
-	s.Require().NotEmpty(suspendables)
-	s.Require().Equal(int32(0), suspendables["0:test-deployment"].Replicas)
+	actual := s.getSuspendable("suspend-deployments-via-suspendable", "0:test-deployment")
+	s.Require().Equal(int32(0), actual.Replicas)
 }
 
 func (s *Integrationtest) TestScaleDeployment() {
@@ -118,8 +108,6 @@ func (s *Integrationtest) TestScaleDeployment() {
 
 	err = s.k8s.ScaleSuspendable("scale-deployments", kubesleep.Deplyoment, "test-deployment", int32(2))
 
-	suspendables, err := s.k8s.GetSuspendables("scale-deployments")
-	s.Require().NoError(err)
-	s.Require().NotEmpty(suspendables)
-	s.Require().Equal(int32(2), suspendables["0:test-deployment"].Replicas)
+	actual := s.getSuspendable("scale-deployments", "0:test-deployment")
+	s.Require().Equal(int32(2), actual.Replicas)
 }

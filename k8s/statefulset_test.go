@@ -74,8 +74,7 @@ func (s *Integrationtest) TestGetStatefulSet() {
 
 	s.Require().Equal([]string{"1:test-statefulset"}, slices.Collect(maps.Keys(suspendables)))
 
-	// simplify for easier comparison
-	actual := suspendables["1:test-statefulset"]
+	actual := s.getSuspendable("get-statefulsets", "1:test-statefulset")
 	actual.Suspend = nil
 	s.Require().Equal(
 		kubesleep.NewSuspendable(
@@ -89,26 +88,21 @@ func (s *Integrationtest) TestGetStatefulSet() {
 }
 
 func (s *Integrationtest) TestSuspendStatefulSet() {
-	deleteNamespace, err := testNamespace("suspend-statefulsets", s.k8s, false)
+	deleteNamespace, err := testNamespace("suspend-statefulsets-via-suspendable", s.k8s, false)
 	s.Require().NoError(err)
 	defer deleteNamespace()
 
-	delete, err := CreateStatefulSet(*s.k8s, "suspend-statefulsets", "test-statefulset", int32(2))
+	delete, err := CreateStatefulSet(*s.k8s, "suspend-statefulsets-via-suspendable", "test-statefulset", int32(2))
 	s.Require().NoError(err)
 	defer delete()
 
-	suspendables, err := s.k8s.GetSuspendables("suspend-statefulsets")
-	s.Require().NoError(err)
-	s.Require().NotEmpty(suspendables)
-	s.Require().Equal(int32(2), suspendables["1:test-statefulset"].Replicas)
+	before := s.getSuspendable("suspend-statefulsets-via-suspendable", "1:test-statefulset")
+	s.Require().Equal(int32(2), before.Replicas)
 
-	err = s.k8s.ScaleSuspendable("suspend-statefulsets", kubesleep.StatefulSet, "test-statefulset", 0)
-	s.Require().NoError(err)
+	s.Require().NoError(before.Suspend())
 
-	suspendables, err = s.k8s.GetSuspendables("suspend-statefulsets")
-	s.Require().NoError(err)
-	s.Require().NotEmpty(suspendables)
-	s.Require().Equal(int32(0), suspendables["1:test-statefulset"].Replicas)
+	actual := s.getSuspendable("suspend-statefulsets-via-suspendable", "1:test-statefulset")
+	s.Require().Equal(int32(0), actual.Replicas)
 }
 
 func (s *Integrationtest) TestScaleStatefulSet() {
@@ -122,8 +116,6 @@ func (s *Integrationtest) TestScaleStatefulSet() {
 
 	err = s.k8s.ScaleSuspendable("scale-statefulsets", kubesleep.StatefulSet, "test-statefulset", int32(2))
 
-	suspendables, err := s.k8s.GetSuspendables("scale-statefulsets")
-	s.Require().NoError(err)
-	s.Require().NotEmpty(suspendables)
-	s.Require().Equal(int32(2), suspendables["1:test-statefulset"].Replicas)
+	actual := s.getSuspendable("scale-statefulsets", "1:test-statefulset")
+	s.Require().Equal(int32(2), actual.Replicas)
 }
