@@ -4,14 +4,8 @@ type K8S interface {
 	GetSuspendableNamespace(string) (SuspendableNamespace, error)
 	GetSuspendableNamespaces() ([]SuspendableNamespace, error)
 
-	GetDeployments(string) (map[string]Suspendable, error)
-	ScaleDeployment(string, string, int32) error
-
-	GetStatefulSets(string) (map[string]Suspendable, error)
-	ScaleStatefulSet(string, string, int32) error
-
-	GetCronJobs(string) (map[string]Suspendable, error)
-	ScaleCronJob(string, string, int32) error
+	GetSuspendables(string) (map[string]Suspendable, error)
+	ScaleSuspendable(namespace string, manifestType ManifestType, name string, replicas int32) error
 
 	GetStateFile(string) (*SuspendStateFile, StateFileActions, error)
 	CreateStateFile(string, *SuspendStateFile) (StateFileActions, error)

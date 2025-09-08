@@ -66,7 +66,7 @@ func (s *Integrationtest) TestGetDeployment() {
 	s.Require().NoError(err)
 	defer delete()
 
-	sus, err := s.k8s.GetDeployments("get-deployments")
+	sus, err := s.k8s.getDeployments("get-deployments")
 	s.Require().NoError(err)
 	s.Require().NotEmpty(sus)
 
@@ -93,7 +93,7 @@ func (s *Integrationtest) TestSuspendDeployment() {
 	s.Require().NoError(err)
 	defer delete()
 
-	sus, err := s.k8s.GetDeployments("suspend-deployments")
+	sus, err := s.k8s.getDeployments("suspend-deployments")
 	s.Require().NoError(err)
 	s.Require().NotEmpty(sus)
 	s.Require().Equal(int32(2), sus["0:test-deployment"].Replicas)
@@ -101,7 +101,7 @@ func (s *Integrationtest) TestSuspendDeployment() {
 	err = sus["0:test-deployment"].Suspend()
 	s.Require().NoError(err)
 
-	sus, err = s.k8s.GetDeployments("suspend-deployments")
+	sus, err = s.k8s.getDeployments("suspend-deployments")
 	s.Require().NoError(err)
 	s.Require().NotEmpty(sus)
 	s.Require().Equal(int32(0), sus["0:test-deployment"].Replicas)
@@ -116,9 +116,9 @@ func (s *Integrationtest) TestScaleDeployment() {
 	s.Require().NoError(err)
 	defer delete()
 
-	err = s.k8s.ScaleDeployment("scale-deployments", "test-deployment", int32(2))
+	err = s.k8s.scaleDeployment("scale-deployments", "test-deployment", int32(2))
 
-	sus, err := s.k8s.GetDeployments("scale-deployments")
+	sus, err := s.k8s.getDeployments("scale-deployments")
 	s.Require().NoError(err)
 	s.Require().NotEmpty(sus)
 	s.Require().Equal(int32(2), sus["0:test-deployment"].Replicas)

@@ -15,7 +15,7 @@ func (s *Unittest) TestNamespaceWake() {
 	stateFile := TEST_SUSPEND_STATE_FILE
 	stateFile.finished = true
 	k8s.On("GetStateFile", "foo").Return(&stateFile, (*MockStateFileActions)(nil), nil)
-	k8s.On("ScaleDeployment", "foo", "test-deployment", int32(2)).Return(errExpected)
+	k8s.On("ScaleSuspendable", "foo", mock.Anything, mock.Anything, mock.Anything).Return(errExpected)
 
 	err := NewSuspendableNamespace("foo", true).wake(k8s)
 
@@ -37,8 +37,7 @@ func (s *Unittest) TestNamespaceWakeFailsWhenSuspendInProgress() {
 
 func (s *Unittest) TestNamespaceSuspendStatefulSetError() {
 	k8s, _ := NewMockK8S()
-	k8s.On("GetDeployments", "foo").Return(map[string]Suspendable{}, nil)
-	k8s.On("GetStatefulSets", "foo").Return(map[string]Suspendable{}, errExpected)
+	k8s.On("GetSuspendables", "foo").Return(map[string]Suspendable{}, errExpected)
 
 	err := NewSuspendableNamespace("foo", true).suspend(k8s)
 
@@ -48,9 +47,7 @@ func (s *Unittest) TestNamespaceSuspendStatefulSetError() {
 
 func (s *Unittest) TestNamespaceSuspendCreateStatefileFailed() {
 	k8s, _ := NewMockK8S()
-	k8s.On("GetDeployments", "foo").Return(map[string]Suspendable{}, nil)
-	k8s.On("GetStatefulSets", "foo").Return(map[string]Suspendable{}, nil)
-	k8s.On("GetCronJobs", "foo").Return(map[string]Suspendable{}, nil)
+	k8s.On("GetSuspendables", "foo").Return(map[string]Suspendable{}, nil)
 	k8s.On("CreateStateFile", "foo", mock.Anything).Return((*MockStateFileActions)(nil), errExpected)
 
 	err := NewSuspendableNamespace("foo", true).suspend(k8s)
@@ -70,9 +67,7 @@ func (s *Unittest) TestSuspendConflict() {
 		slog.Debug("Mock suspend returning conflictErr")
 		return conflictErr
 	}
-	k8s.On("GetDeployments", "foo").Return(map[string]Suspendable{sus.Identifier(): sus}, nil)
-	k8s.On("GetStatefulSets", "foo").Return(map[string]Suspendable{}, nil)
-	k8s.On("GetCronJobs", "foo").Return(map[string]Suspendable{}, nil)
+	k8s.On("GetSuspendables", "foo").Return(map[string]Suspendable{sus.Identifier(): sus}, nil)
 	k8s.On("CreateStateFile", "foo", mock.Anything).Return(&actions, nil)
 
 	err := NewSuspendableNamespace("foo", true).suspend(k8s)
@@ -87,9 +82,7 @@ func (s *Unittest) TestNamespaceSuspend() {
 	actions := MockStateFileActions{}
 	sus := TEST_SUSPENDABLE
 	sus.Suspend = func() error { return nil }
-	k8s.On("GetDeployments", "foo").Return(map[string]Suspendable{sus.Identifier(): sus}, nil)
-	k8s.On("GetStatefulSets", "foo").Return(map[string]Suspendable{}, nil)
-	k8s.On("GetCronJobs", "foo").Return(map[string]Suspendable{}, nil)
+	k8s.On("GetSuspendables", "foo").Return(map[string]Suspendable{sus.Identifier(): sus}, nil)
 	k8s.On("CreateStateFile", "foo", mock.Anything).Return(&actions, nil)
 	actions.On("Update", mock.Anything).Return(nil)
 

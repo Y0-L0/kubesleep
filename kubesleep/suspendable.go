@@ -31,21 +31,8 @@ func (s Suspendable) Identifier() string {
 }
 
 func (s Suspendable) wake(namespace string, k8s K8S) error {
-	switch s.manifestType {
-	case Deplyoment:
-		if err := k8s.ScaleDeployment(namespace, s.name, s.Replicas); err != nil {
-			return fmt.Errorf("Failed to scale Deployment: %s in Namespace: %s, %w", s.name, namespace, err)
-		}
-	case StatefulSet:
-		if err := k8s.ScaleStatefulSet(namespace, s.name, s.Replicas); err != nil {
-			return fmt.Errorf("Failed to scale StatefulSet: %s in Namespace: %s, %w", s.name, namespace, err)
-		}
-	case CronJob:
-		if err := k8s.ScaleCronJob(namespace, s.name, s.Replicas); err != nil {
-			return fmt.Errorf("Failed to scale CronJob: %s in Namespace: %s, %w", s.name, namespace, err)
-		}
-	default:
-		return fmt.Errorf("Suspendable: %s in namespace: %s with invalid namifestType: %d", s.name, namespace, s.manifestType)
+	if err := k8s.ScaleSuspendable(namespace, s.manifestType, s.name, s.Replicas); err != nil {
+		return fmt.Errorf("Failed to scale resource: %s of type: %d in Namespace: %s, %w", s.name, s.manifestType, namespace, err)
 	}
 	return nil
 }

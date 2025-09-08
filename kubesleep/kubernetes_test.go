@@ -60,6 +60,16 @@ func (m *mockK8S) DeleteStateFile(ns string) error {
 	return args.Error(0)
 }
 
+func (m *mockK8S) GetSuspendables(ns string) (map[string]Suspendable, error) {
+	args := m.Called(ns)
+	return args.Get(0).(map[string]Suspendable), args.Error(1)
+}
+
+func (m *mockK8S) ScaleSuspendable(ns string, manifestType ManifestType, name string, replicas int32) error {
+	args := m.Called(ns, manifestType, name, replicas)
+	return args.Error(0)
+}
+
 func (m *mockK8S) GetCronJobs(ns string) (map[string]Suspendable, error) {
 	args := m.Called(ns)
 	return args.Get(0).(map[string]Suspendable), args.Error(1)

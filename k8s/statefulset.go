@@ -7,7 +7,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (k8s K8Simpl) GetStatefulSets(namespace string) (map[string]kubesleep.Suspendable, error) {
+func (k8s K8Simpl) getStatefulSets(namespace string) (map[string]kubesleep.Suspendable, error) {
 	statefulSets, err := k8s.clientset.AppsV1().
 		StatefulSets(namespace).
 		List(k8s.ctx, metav1.ListOptions{})
@@ -58,7 +58,7 @@ func (k8s K8Simpl) suspendStatefulSet(namespace string, name string) func() erro
 	}
 }
 
-func (k8s K8Simpl) ScaleStatefulSet(namespace string, name string, Replicas int32) error {
+func (k8s K8Simpl) scaleStatefulSet(namespace string, name string, Replicas int32) error {
 	scalable, err := k8s.clientset.AppsV1().
 		StatefulSets(namespace).
 		GetScale(k8s.ctx, name, metav1.GetOptions{})

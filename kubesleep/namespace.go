@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"maps"
 
 	"k8s.io/utils/strings/slices"
 )
@@ -83,22 +82,10 @@ func (n *suspendableNamespaceImpl) ensureStateFile(k8s K8S, stateFile *SuspendSt
 }
 
 func (n *suspendableNamespaceImpl) suspend(k8s K8S) error {
-	suspendables, err := k8s.GetDeployments(n.name)
+	suspendables, err := k8s.GetSuspendables(n.name)
 	if err != nil {
 		return err
 	}
-	sus, err := k8s.GetStatefulSets(n.name)
-	if err != nil {
-		return err
-	}
-	maps.Copy(suspendables, sus)
-
-	// Include CronJobs as suspendables by setting spec.suspend=true
-	jobs, err := k8s.GetCronJobs(n.name)
-	if err != nil {
-		return err
-	}
-	maps.Copy(suspendables, jobs)
 
 	stateFile, actions, err := n.ensureStateFile(k8s, &SuspendStateFile{
 		suspendables: suspendables,

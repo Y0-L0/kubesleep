@@ -69,7 +69,7 @@ func (s *Integrationtest) TestGetStatefulSet() {
 	s.Require().NoError(err)
 	defer delete()
 
-	sus, err := s.k8s.GetStatefulSets("get-statefulsets")
+	sus, err := s.k8s.getStatefulSets("get-statefulsets")
 	s.Require().NoError(err)
 
 	s.Require().Equal([]string{"1:test-statefulset"}, slices.Collect(maps.Keys(sus)))
@@ -97,7 +97,7 @@ func (s *Integrationtest) TestSuspendStatefulSet() {
 	s.Require().NoError(err)
 	defer delete()
 
-	sus, err := s.k8s.GetStatefulSets("suspend-statefulsets")
+	sus, err := s.k8s.getStatefulSets("suspend-statefulsets")
 	s.Require().NoError(err)
 	s.Require().NotEmpty(sus)
 	s.Require().Equal(int32(2), sus["1:test-statefulset"].Replicas)
@@ -105,7 +105,7 @@ func (s *Integrationtest) TestSuspendStatefulSet() {
 	err = sus["1:test-statefulset"].Suspend()
 	s.Require().NoError(err)
 
-	sus, err = s.k8s.GetStatefulSets("suspend-statefulsets")
+	sus, err = s.k8s.getStatefulSets("suspend-statefulsets")
 	s.Require().NoError(err)
 	s.Require().NotEmpty(sus)
 	s.Require().Equal(int32(0), sus["1:test-statefulset"].Replicas)
@@ -120,9 +120,9 @@ func (s *Integrationtest) TestScaleStatefulSet() {
 	s.Require().NoError(err)
 	defer delete()
 
-	err = s.k8s.ScaleStatefulSet("scale-statefulsets", "test-statefulset", int32(2))
+	err = s.k8s.scaleStatefulSet("scale-statefulsets", "test-statefulset", int32(2))
 
-	sus, err := s.k8s.GetStatefulSets("scale-statefulsets")
+	sus, err := s.k8s.getStatefulSets("scale-statefulsets")
 	s.Require().NoError(err)
 	s.Require().NotEmpty(sus)
 	s.Require().Equal(int32(2), sus["1:test-statefulset"].Replicas)

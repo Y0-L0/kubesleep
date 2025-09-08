@@ -64,7 +64,7 @@ func (s *Integrationtest) TestGetCronJobs() {
 	s.Require().NoError(err)
 	defer delete()
 
-	sus, err := s.k8s.GetCronJobs("get-cronjobs")
+	sus, err := s.k8s.getCronJobs("get-cronjobs")
 	s.Require().NoError(err)
 	s.Require().NotEmpty(sus)
 
@@ -92,7 +92,7 @@ func (s *Integrationtest) TestSuspendCronJob() {
 	s.Require().NoError(err)
 	defer delete()
 
-	sus, err := s.k8s.GetCronJobs("suspend-cronjobs")
+	sus, err := s.k8s.getCronJobs("suspend-cronjobs")
 	s.Require().NoError(err)
 	s.Require().NotEmpty(sus)
 	s.Require().Equal(int32(1), sus["2:test-cronjob"].Replicas)
@@ -100,7 +100,7 @@ func (s *Integrationtest) TestSuspendCronJob() {
 	err = sus["2:test-cronjob"].Suspend()
 	s.Require().NoError(err)
 
-	sus, err = s.k8s.GetCronJobs("suspend-cronjobs")
+	sus, err = s.k8s.getCronJobs("suspend-cronjobs")
 	s.Require().NoError(err)
 	s.Require().NotEmpty(sus)
 	s.Require().Equal(int32(0), sus["2:test-cronjob"].Replicas)
@@ -115,10 +115,10 @@ func (s *Integrationtest) TestScaleCronJob() {
 	s.Require().NoError(err)
 	defer delete()
 
-	err = s.k8s.ScaleCronJob("scale-cronjobs", "test-cronjob", 1)
+	err = s.k8s.scaleCronJob("scale-cronjobs", "test-cronjob", 1)
 	s.Require().NoError(err)
 
-	sus, err := s.k8s.GetCronJobs("scale-cronjobs")
+	sus, err := s.k8s.getCronJobs("scale-cronjobs")
 	s.Require().NoError(err)
 	s.Require().NotEmpty(sus)
 	s.Require().Equal(int32(1), sus["2:test-cronjob"].Replicas)
