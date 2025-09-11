@@ -6,8 +6,14 @@ import (
 	"log/slog"
 )
 
+// Versioned statefile keys stored in the ConfigMap's data
+const (
+	STATE_FILE_KEY_V1 = "kubesleep.json"
+	STATE_FILE_KEY_V2 = "kubesleep.v2.json"
+)
+
 type StateFileActions interface {
-	Update(*SuspendStateFile) error
+	Update(map[string]string) error
 	Delete() error
 }
 
@@ -69,6 +75,44 @@ func (s *SuspendStateFile) ToJson() string {
 	}
 	slog.Debug("Serialized state file to json", "jsonString", jsonData)
 	return string(jsonData)
+}
+
+// hasCronJobs returns true if any suspendable is of type CronJob
+func (s *SuspendStateFile) hasCronJobs() bool {
+	for _, sus := range s.suspendables {
+		if sus.manifestType == CronJob {
+			return true
+		}
+	}
+	return false
+}
+
+// WriteSuspendState writes the state into the provided data map using versioned keys.
+// If CronJobs are present, v2 contains the real data and v1 contains an upgrade message.
+// Otherwise, both v1 and v2 contain identical real data.
+func WriteSuspendState(state *SuspendStateFile) map[string]string {
+	data := map[string]string{}
+	json := state.ToJson()
+	if state.hasCronJobs() {
+		data[STATE_FILE_KEY_V2] = json
+		data[STATE_FILE_KEY_V1] = `{"message":"please upgrade kubesleep to a version that supports CronJobs"}`
+		return data
+	}
+	data[STATE_FILE_KEY_V1] = json
+	data[STATE_FILE_KEY_V2] = json
+	return data
+}
+
+// ReadSuspendState reads state from the provided data map preferring v2 and falling back to v1.
+// Panics if neither key exists.
+func ReadSuspendState(data map[string]string) *SuspendStateFile {
+	if v2, ok := data[STATE_FILE_KEY_V2]; ok && v2 != "" {
+		return NewSuspendStateFileFromJson(v2)
+	}
+	if v1, ok := data[STATE_FILE_KEY_V1]; ok && v1 != "" {
+		return NewSuspendStateFileFromJson(v1)
+	}
+	panic(fmt.Errorf("missing both %s and %s in statefile configmap", STATE_FILE_KEY_V1, STATE_FILE_KEY_V2))
 }
 
 func (s *SuspendStateFile) merge(other *SuspendStateFile) *SuspendStateFile {

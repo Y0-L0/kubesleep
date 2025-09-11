@@ -62,7 +62,7 @@ func (n *suspendableNamespaceImpl) wake(k8s K8S) error {
 func (n *suspendableNamespaceImpl) ensureStateFile(k8s K8S, stateFile *SuspendStateFile) (*SuspendStateFile, StateFileActions, error) {
 	var alreadyExists StatefileAlreadyExistsError
 
-	actions, err := k8s.CreateStateFile(n.name, stateFile)
+	actions, err := k8s.CreateStateFile(n.name, WriteSuspendState(stateFile))
 	if err == nil {
 		slog.Debug("No existing statefile found. Creating a new one to save the starting conditions.", "namespace", n.name)
 		return stateFile, actions, nil
@@ -105,5 +105,5 @@ func (n *suspendableNamespaceImpl) suspend(k8s K8S) error {
 	}
 
 	stateFile.finished = true
-	return actions.Update(stateFile)
+	return actions.Update(WriteSuspendState(stateFile))
 }

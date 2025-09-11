@@ -8,8 +8,7 @@ type K8S interface {
 	ScaleSuspendable(namespace string, manifestType ManifestType, name string, replicas int32) error
 
 	GetStateFile(string) (*SuspendStateFile, StateFileActions, error)
-	CreateStateFile(string, *SuspendStateFile) (StateFileActions, error)
-	UpdateStateFile(string, *SuspendStateFile) (*SuspendStateFile, error)
+	CreateStateFile(string, map[string]string) (StateFileActions, error)
 	DeleteStateFile(string) error
 }
 

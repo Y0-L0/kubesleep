@@ -1,12 +1,15 @@
 package kubesleep
 
-import "github.com/stretchr/testify/mock"
+import (
+	"fmt"
+	"github.com/stretchr/testify/mock"
+)
 
 type MockStateFileActions struct {
 	mock.Mock
 }
 
-func (m *MockStateFileActions) Update(data *SuspendStateFile) error {
+func (m *MockStateFileActions) Update(data map[string]string) error {
 	args := m.Called(data)
 	return args.Error(0)
 }
@@ -104,4 +107,52 @@ func (s *Unittest) TestMergeStateFiles() {
 	actual := existing.merge(&new)
 
 	s.Require().Equal(expected, actual)
+}
+
+// makeTestStateFile creates a state file that always contains a Deployment "d1"
+// and conditionally includes a CronJob "cj1" when includeCronJob is true.
+func makeTestStateFile(includeCronJob bool) SuspendStateFile {
+	suspendables := map[string]Suspendable{}
+	d1 := NewSuspendable(Deplyoment, "d1", 1, nil)
+	suspendables[d1.Identifier()] = d1
+	if includeCronJob {
+		cj1 := NewSuspendable(CronJob, "cj1", 1, nil)
+		suspendables[cj1.Identifier()] = cj1
+	}
+	return NewSuspendStateFile(suspendables, false)
+}
+
+func (s *Unittest) TestWriteSuspendStateWithoutCronJobs() {
+	state := makeTestStateFile(false)
+	data := WriteSuspendState(&state)
+
+	// Both v1 and v2 exist and are identical
+	s.Require().Contains(data, STATE_FILE_KEY_V1)
+	s.Require().Contains(data, STATE_FILE_KEY_V2)
+	s.Require().Equal(data[STATE_FILE_KEY_V1], data[STATE_FILE_KEY_V2])
+}
+
+func (s *Unittest) TestWriteSuspendStateWithCronJobs() {
+	state := makeTestStateFile(true)
+	data := WriteSuspendState(&state)
+
+	// v2 contains real data; v1 contains an upgrade message
+	s.Require().Contains(data, STATE_FILE_KEY_V1)
+	s.Require().Contains(data, STATE_FILE_KEY_V2)
+	s.Require().NotEqual(data[STATE_FILE_KEY_V1], data[STATE_FILE_KEY_V2])
+	s.Require().Contains(data[STATE_FILE_KEY_V1], "please upgrade kubesleep")
+}
+
+func (s *Unittest) TestOldVersionParseFails() {
+	state := makeTestStateFile(true)
+	data := WriteSuspendState(&state)
+	msgJson := data[STATE_FILE_KEY_V1]
+
+	// Old versions attempting to parse v1 should panic with a descriptive error
+	expected := fmt.Sprintf(
+		"missing field in state file json string. json: %s, stateFileDto: %+v",
+		msgJson,
+		suspendStateFileDto{},
+	)
+	s.Require().PanicsWithError(expected, func() { _ = NewSuspendStateFileFromJson(msgJson) })
 }

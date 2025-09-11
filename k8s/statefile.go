@@ -10,16 +10,15 @@ import (
 )
 
 const STATE_FILE_NAME = "kubesleep-suspend-state"
-const STATE_FILE_KEY = "kubesleep.json"
 
 type StateFileActionsImpl struct {
 	k8s       *K8Simpl
 	configmap *corev1.ConfigMap
 }
 
-func (s *StateFileActionsImpl) Update(data *kubesleep.SuspendStateFile) error {
+func (s *StateFileActionsImpl) Update(data map[string]string) error {
 	var err error
-	s.configmap.Data[STATE_FILE_KEY] = data.ToJson()
+	s.configmap.Data = data
 	s.configmap, err = s.k8s.clientset.CoreV1().ConfigMaps(s.configmap.ObjectMeta.Namespace).Update(
 		s.k8s.ctx,
 		s.configmap,
@@ -45,20 +44,17 @@ func (k8s *K8Simpl) GetStateFile(namespace string) (*kubesleep.SuspendStateFile,
 	if err != nil {
 		return nil, nil, err
 	}
-	return kubesleep.NewSuspendStateFileFromJson(configmap.Data[STATE_FILE_KEY]), &StateFileActionsImpl{k8s, configmap}, nil
+	return kubesleep.ReadSuspendState(configmap.Data), &StateFileActionsImpl{k8s, configmap}, nil
 }
 
-func (k8s *K8Simpl) CreateStateFile(namespace string, data *kubesleep.SuspendStateFile) (kubesleep.StateFileActions, error) {
-	// Create a new state file as a kubernetes configmap
+func (k8s *K8Simpl) CreateStateFile(namespace string, data map[string]string) (kubesleep.StateFileActions, error) {
 
 	configmap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      STATE_FILE_NAME,
 			Namespace: namespace,
 		},
-		Data: map[string]string{
-			STATE_FILE_KEY: data.ToJson(),
-		},
+		Data: data,
 	}
 
 	configmap, err := k8s.clientset.CoreV1().ConfigMaps(namespace).Create(
@@ -76,31 +72,6 @@ func (k8s *K8Simpl) CreateStateFile(namespace string, data *kubesleep.SuspendSta
 	}
 
 	return &StateFileActionsImpl{k8s, configmap}, nil
-}
-
-func (k8s *K8Simpl) UpdateStateFile(namespace string, data *kubesleep.SuspendStateFile) (*kubesleep.SuspendStateFile, error) {
-	// Write a state file to a kubernetes configmap
-	// Will return the current state of the configmap.
-	configmap, err := k8s.clientset.CoreV1().ConfigMaps(namespace).Get(
-		k8s.ctx,
-		STATE_FILE_NAME,
-		metav1.GetOptions{},
-	)
-
-	if apierrors.IsNotFound(err) {
-		panic(fmt.Errorf("Updating an existing statefile only works if it has been created before, %w", err))
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	configmap.Data[STATE_FILE_KEY] = data.ToJson()
-	result, err := k8s.clientset.CoreV1().ConfigMaps(namespace).Update(
-		k8s.ctx,
-		configmap,
-		metav1.UpdateOptions{},
-	)
-	return kubesleep.NewSuspendStateFileFromJson(result.Data[STATE_FILE_KEY]), nil
 }
 
 func (k8s *K8Simpl) DeleteStateFile(namespace string) error {

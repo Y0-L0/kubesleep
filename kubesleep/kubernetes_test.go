@@ -45,14 +45,9 @@ func (m *mockK8S) GetStateFile(ns string) (*SuspendStateFile, StateFileActions, 
 	return args.Get(0).(*SuspendStateFile), args.Get(1).(StateFileActions), args.Error(2)
 }
 
-func (m *mockK8S) CreateStateFile(ns string, file *SuspendStateFile) (StateFileActions, error) {
-	args := m.Called(ns, file)
+func (m *mockK8S) CreateStateFile(ns string, data map[string]string) (StateFileActions, error) {
+	args := m.Called(ns, data)
 	return args.Get(0).(StateFileActions), args.Error(1)
-}
-
-func (m *mockK8S) UpdateStateFile(ns string, file *SuspendStateFile) (*SuspendStateFile, error) {
-	args := m.Called(ns, file)
-	return args.Get(0).(*SuspendStateFile), args.Error(1)
 }
 
 func (m *mockK8S) DeleteStateFile(ns string) error {
