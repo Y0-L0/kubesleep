@@ -59,10 +59,10 @@ func (n *suspendableNamespaceImpl) wake(k8s K8S) error {
 	return actions.Delete()
 }
 
-func (n *suspendableNamespaceImpl) ensureStateFile(k8s K8S, stateFile *SuspendStateFile) (*SuspendStateFile, StateFileActions, error) {
+func (n *suspendableNamespaceImpl) ensureStateFile(k8s K8S, stateFile *SuspendState) (*SuspendState, SuspendStateActions, error) {
 	var alreadyExists StatefileAlreadyExistsError
 
-	actions, err := k8s.CreateStateFile(n.name, stateFile)
+	actions, err := k8s.CreateStateFile(n.name, stateFile.Write())
 	if err == nil {
 		slog.Debug("No existing statefile found. Creating a new one to save the starting conditions.", "namespace", n.name)
 		return stateFile, actions, nil
@@ -73,7 +73,7 @@ func (n *suspendableNamespaceImpl) ensureStateFile(k8s K8S, stateFile *SuspendSt
 	}
 
 	slog.Debug("Statefile already exists. Reading existing statefile and merging it with the current state in the cluster.", "namespace", n.name)
-	var existingStateFile *SuspendStateFile
+	var existingStateFile *SuspendState
 	existingStateFile, actions, err = k8s.GetStateFile(n.name)
 	if err != nil {
 		return nil, nil, err
@@ -87,7 +87,7 @@ func (n *suspendableNamespaceImpl) suspend(k8s K8S) error {
 		return err
 	}
 
-	stateFile, actions, err := n.ensureStateFile(k8s, &SuspendStateFile{
+	stateFile, actions, err := n.ensureStateFile(k8s, &SuspendState{
 		suspendables: suspendables,
 		finished:     false,
 	})
@@ -105,5 +105,5 @@ func (n *suspendableNamespaceImpl) suspend(k8s K8S) error {
 	}
 
 	stateFile.finished = true
-	return actions.Update(stateFile)
+	return actions.Update(stateFile.Write())
 }

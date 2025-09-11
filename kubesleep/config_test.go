@@ -118,7 +118,7 @@ func (s *Unittest) TestWakeBrokenK8SFactory() {
 func (s *Unittest) TestWakeBrokenK8S() {
 	k8s, factory := NewMockK8S()
 	k8s.On("GetSuspendableNamespace", "foo").Return(NewSuspendableNamespace("foo", false), nil)
-	k8s.On("GetStateFile", "foo").Return((*SuspendStateFile)(nil), (*MockStateFileActions)(nil), errExpected)
+	k8s.On("GetStateFile", "foo").Return((*SuspendState)(nil), (*MockStateFileActions)(nil), errExpected)
 
 	err := cliConfig{namespaces: []string{"foo"}}.wake(factory)
 
@@ -130,7 +130,7 @@ func (s *Unittest) TestWakeEmptyNamespace() {
 	k8s, factory := NewMockK8S()
 	actions := MockStateFileActions{}
 	k8s.On("GetSuspendableNamespace", "foo").Return(NewSuspendableNamespace("foo", false), nil)
-	k8s.On("GetStateFile", "foo").Return(&SuspendStateFile{finished: true}, &actions, nil)
+	k8s.On("GetStateFile", "foo").Return(&SuspendState{finished: true}, &actions, nil)
 	actions.On("Delete").Return(nil)
 
 	err := cliConfig{namespaces: []string{"foo"}}.wake(factory)
