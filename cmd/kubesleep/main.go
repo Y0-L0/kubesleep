@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log/slog"
 	"os"
 
@@ -10,15 +9,11 @@ import (
 )
 
 func main() {
-	kubesleep.SetupLogging(slog.LevelWarn)
-
-	command, _ := kubesleep.NewParser(os.Args, k8s.NewK8S, kubesleep.SetupLogging)
-	command.SetOut(os.Stdout)
-	command.SetErr(os.Stderr)
-
-	err := command.Execute()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
+	kubesleep.Main(
+		os.Args,
+		slog.LevelWarn,
+		k8s.NewK8S,
+		os.Stdout,
+		os.Stderr,
+	)
 }
