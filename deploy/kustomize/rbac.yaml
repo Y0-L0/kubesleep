@@ -15,6 +15,11 @@ rules:
     resources: ["deployments/scale", "statefulsets/scale"]
     verbs: ["get", "update"]
 
+  # Read and update CronJobs (suspend/resume)
+  - apiGroups: ["batch"]
+    resources: ["cronjobs"]
+    verbs: ["get", "list", "update"]
+
   - apiGroups: [""]
     resources: ["configmaps"]
     verbs: ["get", "create", "update", "delete"]

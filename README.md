@@ -28,7 +28,7 @@ go build -o /usr/local/bin/ ./cmd/...
 
 > **Prerequisites**
 >
-> * A kubeconfig whose user or service‑account has RBAC rights to interact with namespaces, ConfigMaps, Deployments, and StatefulSets.
+> * A kubeconfig whose user or service‑account has RBAC rights to interact with namespaces, ConfigMaps, Deployments, StatefulSets and CronJobs.
 
 ---
 
