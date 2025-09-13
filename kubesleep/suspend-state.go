@@ -30,7 +30,7 @@ type SuspendState struct {
 func NewSuspendState(suspendables map[string]Suspendable, finished bool) SuspendState {
 	return SuspendState{
 		suspendables: suspendables,
-		finished:     false,
+		finished:     finished,
 	}
 }
 

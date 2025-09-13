@@ -175,3 +175,10 @@ func (s *Unittest) TestReadV1() {
 
 	s.Require().Equal(&expectedState, actual)
 }
+
+func (s *Unittest) TestNewSuspendStateHonorsFinishedFlag() {
+	stTrue := NewSuspendState(map[string]Suspendable{}, true)
+	s.Require().True(stTrue.finished)
+	stFalse := NewSuspendState(map[string]Suspendable{}, false)
+	s.Require().False(stFalse.finished)
+}
