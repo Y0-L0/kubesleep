@@ -46,6 +46,8 @@ func NewParser(args []string, k8sFactory func() (K8S, error), setupLogging func(
 		},
 	}
 	rootCmd.SetArgs(args[1:])
+	// Direct human-facing output through the command's stdout writer
+	config.outWriter = rootCmd.OutOrStdout()
 
 	versionCmd := &cobra.Command{
 		Use:   "version",

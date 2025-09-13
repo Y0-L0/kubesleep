@@ -33,37 +33,37 @@ func (s *Unittest) TestValidCliArguments() {
 			"suspend with ns",
 			[]string{"kubesleep", "suspend", "-n", "test-ns"},
 			"suspend",
-			&cliConfig{[]string{"test-ns"}, false, false},
+			&cliConfig{namespaces: []string{"test-ns"}, force: false, allNamespaces: false},
 		},
 		{
 			"suspend verbose",
 			[]string{"kubesleep", "suspend", "-n", "test-ns"},
 			"suspend",
-			&cliConfig{[]string{"test-ns"}, false, false},
+			&cliConfig{namespaces: []string{"test-ns"}, force: false, allNamespaces: false},
 		},
 		{
 			"suspend multiple namespaces",
 			[]string{"kubesleep", "suspend", "-n", "test-ns", "-n", "other-test-ns"},
 			"suspend",
-			&cliConfig{[]string{"test-ns", "other-test-ns"}, false, false},
+			&cliConfig{namespaces: []string{"test-ns", "other-test-ns"}, force: false, allNamespaces: false},
 		},
 		{
 			"suspend all namespaces",
 			[]string{"kubesleep", "suspend", "--all-namespaces"},
 			"suspend",
-			&cliConfig{nil, false, true},
+			&cliConfig{namespaces: nil, force: false, allNamespaces: true},
 		},
 		{
 			"suspend with force",
 			[]string{"kubesleep", "suspend", "-n", "test-ns", "-f"},
 			"suspend",
-			&cliConfig{[]string{"test-ns"}, true, false},
+			&cliConfig{namespaces: []string{"test-ns"}, force: true, allNamespaces: false},
 		},
 		{
 			"wake with ns",
 			[]string{"kubesleep", "wake", "-n", "test-ns"},
 			"wake",
-			&cliConfig{[]string{"test-ns"}, false, false},
+			&cliConfig{namespaces: []string{"test-ns"}, force: false, allNamespaces: false},
 		},
 	}
 
@@ -86,6 +86,8 @@ func (s *Unittest) TestValidCliArguments() {
 			k8s.AssertExpectations(s.T())
 
 			s.Equal("kubesleep", command.Name())
+			// outWriter is initialized by the parser, set expected to match
+			testCase.config.outWriter = command.OutOrStdout()
 			s.Equal(testCase.config, config)
 		})
 	}
@@ -100,12 +102,12 @@ func (s *Unittest) TestVersionSubcommand() {
 		{
 			"print version information",
 			[]string{"kubesleep", "version"},
-			&cliConfig{nil, false, false},
+			&cliConfig{namespaces: nil, force: false, allNamespaces: false},
 		},
 		{
 			"print version information ignoring any namespace arguments",
 			[]string{"kubesleep", "version", "-n", "test-ns", "-n", "other-test-ns"},
-			&cliConfig{[]string{"test-ns", "other-test-ns"}, false, false},
+			&cliConfig{namespaces: []string{"test-ns", "other-test-ns"}, force: false, allNamespaces: false},
 		},
 	}
 
@@ -120,6 +122,7 @@ func (s *Unittest) TestVersionSubcommand() {
 			s.Require().NoError(err)
 
 			s.Equal("kubesleep", command.Name())
+			testCase.config.outWriter = command.OutOrStdout()
 			s.Equal(testCase.config, config)
 		})
 	}
@@ -146,6 +149,7 @@ func (s *Unittest) TestInvalidCliArguments() {
 			err := command.Execute()
 
 			s.Require().Error(err)
+			testCase.config.outWriter = command.OutOrStdout()
 			s.Require().Equal(testCase.config, config)
 		})
 	}
@@ -180,7 +184,9 @@ func (s *Unittest) TestLogLevel() {
 
 			s.Require().Equal(errExpected, err)
 			k8s.AssertExpectations(s.T())
-			s.Require().Equal(&cliConfig{namespaces: []string{"foo"}}, config)
+			expected := &cliConfig{namespaces: []string{"foo"}}
+			expected.outWriter = command.OutOrStdout()
+			s.Require().Equal(expected, config)
 			s.Require().Equal(testCase.logLevel, logLevel)
 		})
 	}
