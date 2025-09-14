@@ -86,19 +86,16 @@ func (c cliConfig) wake(k8sFactory func() (K8S, error)) error {
 		return err
 	}
 
-	for _, namespace := range c.namespaces {
-		if namespace == "" {
-			panic("Invalid namespace value")
-		}
-		ns, err := k8s.GetSuspendableNamespace(namespace)
-		if err != nil {
-			return err
-		}
+	namespaces, err := c.getNamespaces(k8s)
+	if err != nil {
+		return err
+	}
+	for _, ns := range namespaces {
 		err = ns.wake(k8s)
 		if err != nil {
 			return err
 		}
-		fmt.Fprintf(c.outWriter, "Woke namespace %s\n", namespace)
+		fmt.Fprintf(c.outWriter, "Woke namespace %s\n", ns.Name())
 	}
 	return nil
 }
