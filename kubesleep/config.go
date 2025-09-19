@@ -6,6 +6,7 @@ import (
 	"io"
 	"log/slog"
 	"slices"
+	"text/tabwriter"
 )
 
 type cliConfig struct {
@@ -107,26 +108,36 @@ type status struct {
 	protected bool
 }
 
-func (c cliConfig) status(ctx context.Context, k8sFactory func() (K8S, error)) ([]status, error) {
+func (c cliConfig) status(ctx context.Context, k8sFactory func() (K8S, error)) error {
 	c.validate()
 	k8s, err := k8sFactory()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	namespaces, err := c.getNamespaces(ctx, k8s)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	var table []status
 	for _, namespace := range namespaces {
 		statusString, err := namespace.status(ctx, k8s)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		row := status{namespace.Name(), statusString, namespace.Protected()}
 		table = append(table, row)
 	}
-	return table, nil
+	c.printStatus(table)
+	return nil
+}
+
+func (c cliConfig) printStatus(statusTable []status) {
+	w := tabwriter.NewWriter(c.outWriter, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(w, "name\tstatus\tprotected\t")
+	for _, row := range statusTable {
+		fmt.Fprintf(w, "%s\t%s\t%t\t\n", row.name, row.status, row.protected)
+	}
+	w.Flush()
 }
