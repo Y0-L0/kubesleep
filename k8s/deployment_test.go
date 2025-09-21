@@ -97,6 +97,28 @@ func (s *Integrationtest) TestSuspendDeployment() {
 	s.Require().Equal(int32(0), actual.Replicas)
 }
 
+func (s *Integrationtest) TestAlreadySuspendedDeployment() {
+	deleteNamespace, err := testNamespace("skip-already-suspended-deployment", s.k8s, false)
+	s.Require().NoError(err)
+	defer deleteNamespace()
+
+	delete, err := CreateDeployment(*s.k8s, "skip-already-suspended-deployment", "test-deployment", int32(0))
+	s.Require().NoError(err)
+	defer delete()
+
+	beforeScale, err := s.k8s.clientset.AppsV1().Deployments("skip-already-suspended-deployment").GetScale(s.k8s.ctx, "test-deployment", metav1.GetOptions{})
+	s.Require().NoError(err)
+
+	before := s.getSuspendable("skip-already-suspended-deployment", "0:test-deployment")
+	s.Require().Equal(int32(0), before.Replicas)
+
+	s.Require().NoError(before.Suspend())
+
+	afterScale, err := s.k8s.clientset.AppsV1().Deployments("skip-already-suspended-deployment").GetScale(s.k8s.ctx, "test-deployment", metav1.GetOptions{})
+	s.Require().NoError(err)
+	s.Require().Equal(beforeScale.ResourceVersion, afterScale.ResourceVersion)
+}
+
 func (s *Integrationtest) TestScaleDeployment() {
 	deleteNamespace, err := testNamespace("scale-deployments", s.k8s, false)
 	s.Require().NoError(err)

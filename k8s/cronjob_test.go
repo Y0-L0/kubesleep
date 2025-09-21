@@ -45,7 +45,7 @@ func CreateCronJob(k8s K8Simpl, namespace string, name string, suspended bool) (
 	return delete, nil
 }
 
-func (s *Integrationtest) TestCreateDeleteCronJob() {
+func (s *Integrationtest) TestCronJob_CreateDelete() {
 	deleteNamespace, err := testNamespace("create-delete-cronjob", s.k8s, false)
 	s.Require().NoError(err)
 	defer deleteNamespace()
@@ -55,7 +55,7 @@ func (s *Integrationtest) TestCreateDeleteCronJob() {
 	defer delete()
 }
 
-func (s *Integrationtest) TestGetCronJobs() {
+func (s *Integrationtest) TestCronJobs_Get() {
 	deleteNamespace, err := testNamespace("get-cronjobs", s.k8s, false)
 	s.Require().NoError(err)
 	defer deleteNamespace()
@@ -78,7 +78,7 @@ func (s *Integrationtest) TestGetCronJobs() {
 	)
 }
 
-func (s *Integrationtest) TestSuspendCronJob() {
+func (s *Integrationtest) TestCronJob_Suspend() {
 	deleteNamespace, err := testNamespace("suspend-cronjobs", s.k8s, false)
 	s.Require().NoError(err)
 	defer deleteNamespace()
@@ -96,7 +96,7 @@ func (s *Integrationtest) TestSuspendCronJob() {
 	s.Require().Equal(int32(0), actual.Replicas)
 }
 
-func (s *Integrationtest) TestScaleCronJob() {
+func (s *Integrationtest) TestCronJob_Scale() {
 	deleteNamespace, err := testNamespace("scale-cronjobs", s.k8s, false)
 	s.Require().NoError(err)
 	defer deleteNamespace()
@@ -110,4 +110,33 @@ func (s *Integrationtest) TestScaleCronJob() {
 
 	actual := s.getSuspendable("scale-cronjobs", "2:test-cronjob")
 	s.Require().Equal(int32(1), actual.Replicas)
+}
+
+func (s *Integrationtest) TestCronJob_SuspendNoopWhenAlreadySuspended() {
+	deleteNamespace, err := testNamespace("suspend-cronjobs-noop", s.k8s, false)
+	s.Require().NoError(err)
+	defer deleteNamespace()
+
+	name := "noop-cronjob"
+	delete, err := CreateCronJob(*s.k8s, "suspend-cronjobs-noop", name, true)
+	s.Require().NoError(err)
+	defer delete()
+
+	before, err := s.k8s.clientset.BatchV1().CronJobs("suspend-cronjobs-noop").Get(
+		s.k8s.ctx,
+		name,
+		metav1.GetOptions{},
+	)
+	s.Require().NoError(err)
+
+	sus := s.getSuspendable("suspend-cronjobs-noop", "2:"+name)
+	s.Require().NoError(sus.Suspend())
+
+	after, err := s.k8s.clientset.BatchV1().CronJobs("suspend-cronjobs-noop").Get(
+		s.k8s.ctx,
+		name,
+		metav1.GetOptions{},
+	)
+	s.Require().NoError(err)
+	s.Equal(before.ResourceVersion, after.ResourceVersion, "cronjob resourceVersion changed; suspend should be a no-op when already suspended")
 }

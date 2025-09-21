@@ -18,7 +18,12 @@ func (k8s K8Simpl) getDeployments(namespace string) (map[string]kubesleep.Suspen
 	suspendables := map[string]kubesleep.Suspendable{}
 
 	for _, deployment := range deployments.Items {
-		suspend := k8s.suspendDeployment(namespace, deployment.Name)
+		var suspend func() error
+		if deployment.Spec.Replicas != nil && *deployment.Spec.Replicas == 0 {
+			suspend = k8s.noopSuspendDeployment(namespace, deployment.Name)
+		} else {
+			suspend = k8s.suspendDeployment(namespace, deployment.Name)
+		}
 
 		s := kubesleep.NewSuspendable(
 			kubesleep.Deplyoment,
@@ -31,6 +36,13 @@ func (k8s K8Simpl) getDeployments(namespace string) (map[string]kubesleep.Suspen
 	}
 
 	return suspendables, nil
+}
+
+func (k8s K8Simpl) noopSuspendDeployment(namespace, name string) func() error {
+	return func() error {
+		slog.Debug("Deployment already at 0 replicas; skipping suspend", "namespace", namespace, "name", name)
+		return nil
+	}
 }
 
 func (k8s K8Simpl) suspendDeployment(namespace string, name string) func() error {

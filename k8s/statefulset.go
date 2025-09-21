@@ -18,7 +18,12 @@ func (k8s K8Simpl) getStatefulSets(namespace string) (map[string]kubesleep.Suspe
 	suspendables := map[string]kubesleep.Suspendable{}
 
 	for _, statefulSet := range statefulSets.Items {
-		suspend := k8s.suspendStatefulSet(namespace, statefulSet.Name)
+		var suspend func() error
+		if statefulSet.Spec.Replicas != nil && *statefulSet.Spec.Replicas == 0 {
+			suspend = k8s.noopSuspendStatefulSet(namespace, statefulSet.Name)
+		} else {
+			suspend = k8s.suspendStatefulSet(namespace, statefulSet.Name)
+		}
 
 		s := kubesleep.NewSuspendable(
 			kubesleep.StatefulSet,
@@ -31,6 +36,13 @@ func (k8s K8Simpl) getStatefulSets(namespace string) (map[string]kubesleep.Suspe
 	}
 
 	return suspendables, nil
+}
+
+func (k8s K8Simpl) noopSuspendStatefulSet(namespace, name string) func() error {
+	return func() error {
+		slog.Debug("StatefulSet already at 0 replicas; skipping suspend", "namespace", namespace, "name", name)
+		return nil
+	}
 }
 
 func (k8s K8Simpl) suspendStatefulSet(namespace string, name string) func() error {

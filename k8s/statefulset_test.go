@@ -105,6 +105,28 @@ func (s *Integrationtest) TestSuspendStatefulSet() {
 	s.Require().Equal(int32(0), actual.Replicas)
 }
 
+func (s *Integrationtest) TestAlreadySuspendedStatefulSet() {
+	deleteNamespace, err := testNamespace("skip-already-suspended-statefulset", s.k8s, false)
+	s.Require().NoError(err)
+	defer deleteNamespace()
+
+	delete, err := CreateStatefulSet(*s.k8s, "skip-already-suspended-statefulset", "test-statefulset", int32(0))
+	s.Require().NoError(err)
+	defer delete()
+
+	beforeScale, err := s.k8s.clientset.AppsV1().StatefulSets("skip-already-suspended-statefulset").GetScale(s.k8s.ctx, "test-statefulset", metav1.GetOptions{})
+	s.Require().NoError(err)
+
+	before := s.getSuspendable("skip-already-suspended-statefulset", "1:test-statefulset")
+	s.Require().Equal(int32(0), before.Replicas)
+
+	s.Require().NoError(before.Suspend())
+
+	afterScale, err := s.k8s.clientset.AppsV1().StatefulSets("skip-already-suspended-statefulset").GetScale(s.k8s.ctx, "test-statefulset", metav1.GetOptions{})
+	s.Require().NoError(err)
+	s.Require().Equal(beforeScale.ResourceVersion, afterScale.ResourceVersion)
+}
+
 func (s *Integrationtest) TestScaleStatefulSet() {
 	deleteNamespace, err := testNamespace("scale-statefulsets", s.k8s, false)
 	s.Require().NoError(err)
