@@ -29,27 +29,21 @@ func (s *Unittest) TestBuildInfoOutput() {
 }
 
 func (s *Unittest) TestCheckForUpdate_NewerAvailable() {
-	Version = "v0.2.0"
-
-	message, err := compareVersions("v0.3.0", "https://example.com")
+	message, err := compareVersions("v0.2.0", "v0.3.0", "https://example.com")
 
 	s.Require().NoError(err)
 	s.Require().Equal("A new kubesleep version has been released: v0.2.0 -> v0.3.0 https://example.com", message)
 }
 
 func (s *Unittest) TestCheckForUpdate_UpToDate() {
-	Version = "v0.3.0"
-
-	message, err := compareVersions("v0.3.0", "https://example.com")
+	message, err := compareVersions("v0.3.0", "v0.3.0", "https://example.com")
 
 	s.Require().NoError(err)
 	s.Require().Equal(message, "")
 }
 
 func (s *Unittest) TestCheckForUpdate_InvalidRemoteVersion() {
-	Version = "v0.2.0"
-
-	message, err := compareVersions("invalid version", "https://example.com")
+	message, err := compareVersions("v0.2.0", "invalid version", "https://example.com")
 
 	s.Require().Error(err)
 	s.Require().Equal("", message)
@@ -62,6 +56,13 @@ func (s *Unittest) TestCheckForUpdate_InvalidLocalVersion() {
 	message, err := CheckForUpdate(client)
 	s.Require().Error(err)
 	s.Require().Equal("", message)
+}
+
+func (s *Unittest) TestCheckForUpdate_SnapshotVersion() {
+	message, err := compareVersions("v0.3.4-SNAPSHOT-421ef99", "v0.3.4", "https://example.com")
+
+	s.Require().NoError(err)
+	s.Require().Contains(message, "A new kubesleep version has been released:")
 }
 
 type roundTripFunc func(*http.Request) (*http.Response, error)

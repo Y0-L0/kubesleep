@@ -29,8 +29,9 @@ func BuildInfo(w io.Writer) {
 }
 
 func CheckForUpdate(client *http.Client) (string, error) {
-	if !semver.IsValid(Version) {
-		return "", fmt.Errorf("invalid build version string: %s", Version)
+	localVersion := Version
+	if !semver.IsValid(localVersion) {
+		return "", fmt.Errorf("invalid build version string: %s", localVersion)
 	}
 	response, err := client.Get(LatestVersionURL)
 	if err != nil {
@@ -45,16 +46,16 @@ func CheckForUpdate(client *http.Client) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to parse github release json: %w", err)
 	}
-	return compareVersions(payload.Version, payload.Url)
+	return compareVersions(localVersion, payload.Version, payload.Url)
 }
 
-func compareVersions(remoteVersion string, url string) (string, error) {
+func compareVersions(localVersion, remoteVersion string, url string) (string, error) {
 	if !semver.IsValid(remoteVersion) {
 		return "", fmt.Errorf("invalid remote version string: %s", remoteVersion)
 	}
-	if semver.Compare(Version, remoteVersion) >= 0 {
-		slog.Info("No new kubesleep version available on github", "build-version", Version, "latest-version", remoteVersion)
+	if semver.Compare(localVersion, remoteVersion) >= 0 {
+		slog.Info("No new kubesleep version available on github", "build-version", localVersion, "latest-version", remoteVersion)
 		return "", nil
 	}
-	return fmt.Sprintf("A new kubesleep version has been released: %s -> %s %s", Version, remoteVersion, url), nil
+	return fmt.Sprintf("A new kubesleep version has been released: %s -> %s %s", localVersion, remoteVersion, url), nil
 }
