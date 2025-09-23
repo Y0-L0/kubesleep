@@ -13,4 +13,4 @@ resources:
 images:
   - name: kubesleep
     newName: ghcr.io/y0-l0/kubesleep
-    newTag: 0.3.4@sha256:cd46aaf8b89e74fd621ffdf29e58c3bb4e9beaf868a2f2ed1fa42a24b683e340
+    newTag: 0.4.1@sha256:94a7f963882fe37d224787bc115abed7036d40b046c8c8a382db38130e5e91f8
