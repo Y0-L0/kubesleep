@@ -1,16 +1,17 @@
 package k8s
 
 import (
+	"context"
 	"log/slog"
 
 	kubesleep "github.com/Y0-L0/kubesleep/kubesleep"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (k8s K8Simpl) getDeployments(namespace string) (map[string]kubesleep.Suspendable, error) {
+func (k8s K8Simpl) getDeployments(ctx context.Context, namespace string) (map[string]kubesleep.Suspendable, error) {
 	deployments, err := k8s.clientset.AppsV1().
 		Deployments(namespace).
-		List(k8s.ctx, metav1.ListOptions{})
+		List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -22,7 +23,7 @@ func (k8s K8Simpl) getDeployments(namespace string) (map[string]kubesleep.Suspen
 		if deployment.Spec.Replicas != nil && *deployment.Spec.Replicas == 0 {
 			suspend = k8s.noopSuspendDeployment(namespace, deployment.Name)
 		} else {
-			suspend = k8s.suspendDeployment(namespace, deployment.Name)
+			suspend = k8s.suspendDeployment(ctx, namespace, deployment.Name)
 		}
 
 		s := kubesleep.NewSuspendable(
@@ -45,11 +46,11 @@ func (k8s K8Simpl) noopSuspendDeployment(namespace, name string) func() error {
 	}
 }
 
-func (k8s K8Simpl) suspendDeployment(namespace string, name string) func() error {
+func (k8s K8Simpl) suspendDeployment(ctx context.Context, namespace string, name string) func() error {
 	return func() error {
 		scalable, err := k8s.clientset.AppsV1().
 			Deployments(namespace).
-			GetScale(k8s.ctx, name, metav1.GetOptions{})
+			GetScale(ctx, name, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
@@ -57,7 +58,7 @@ func (k8s K8Simpl) suspendDeployment(namespace string, name string) func() error
 		scalable.Spec.Replicas = int32(0)
 
 		_, err = k8s.clientset.AppsV1().Deployments(namespace).UpdateScale(
-			k8s.ctx,
+			ctx,
 			scalable.Name,
 			scalable,
 			metav1.UpdateOptions{},
@@ -70,17 +71,17 @@ func (k8s K8Simpl) suspendDeployment(namespace string, name string) func() error
 	}
 }
 
-func (k8s K8Simpl) scaleDeployment(namespace string, name string, replicas int32) error {
+func (k8s K8Simpl) scaleDeployment(ctx context.Context, namespace string, name string, replicas int32) error {
 	scalable, err := k8s.clientset.AppsV1().
 		Deployments(namespace).
-		GetScale(k8s.ctx, name, metav1.GetOptions{})
+		GetScale(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 
 	scalable.Spec.Replicas = replicas
 	_, err = k8s.clientset.AppsV1().Deployments(scalable.Namespace).UpdateScale(
-		k8s.ctx,
+		ctx,
 		scalable.Name,
 		scalable,
 		metav1.UpdateOptions{},

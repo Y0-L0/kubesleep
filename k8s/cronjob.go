@@ -1,16 +1,17 @@
 package k8s
 
 import (
+	"context"
 	"log/slog"
 
 	kubesleep "github.com/Y0-L0/kubesleep/kubesleep"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (k8s K8Simpl) getCronJobs(namespace string) (map[string]kubesleep.Suspendable, error) {
+func (k8s K8Simpl) getCronJobs(ctx context.Context, namespace string) (map[string]kubesleep.Suspendable, error) {
 	cronJobs, err := k8s.clientset.BatchV1().
 		CronJobs(namespace).
-		List(k8s.ctx, metav1.ListOptions{})
+		List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -22,7 +23,7 @@ func (k8s K8Simpl) getCronJobs(namespace string) (map[string]kubesleep.Suspendab
 		if job.Spec.Suspend != nil && *job.Spec.Suspend {
 			suspend = k8s.noopSuspendCronJob(namespace, job.Name)
 		} else {
-			suspend = k8s.suspendCronJob(namespace, job.Name)
+			suspend = k8s.suspendCronJob(ctx, namespace, job.Name)
 		}
 
 		s := kubesleep.NewSuspendable(
@@ -45,20 +46,20 @@ func (k8s K8Simpl) noopSuspendCronJob(namespace, name string) func() error {
 	}
 }
 
-func (k8s K8Simpl) suspendCronJob(namespace, name string) func() error {
+func (k8s K8Simpl) suspendCronJob(ctx context.Context, namespace, name string) func() error {
 	return func() error {
 		result := true
-		return k8s.setCronJobSuspended(namespace, name, &result)
+		return k8s.setCronJobSuspended(ctx, namespace, name, &result)
 	}
 }
 
-func (k8s K8Simpl) scaleCronJob(namespace, name string, replicas int32) error {
-	return k8s.setCronJobSuspended(namespace, name, replicasToSuspended(replicas))
+func (k8s K8Simpl) scaleCronJob(ctx context.Context, namespace, name string, replicas int32) error {
+	return k8s.setCronJobSuspended(ctx, namespace, name, replicasToSuspended(replicas))
 }
 
-func (k8s K8Simpl) setCronJobSuspended(namespace, name string, suspended *bool) error {
+func (k8s K8Simpl) setCronJobSuspended(ctx context.Context, namespace, name string, suspended *bool) error {
 	cj, err := k8s.clientset.BatchV1().CronJobs(namespace).Get(
-		k8s.ctx,
+		ctx,
 		name,
 		metav1.GetOptions{},
 	)
@@ -69,7 +70,7 @@ func (k8s K8Simpl) setCronJobSuspended(namespace, name string, suspended *bool) 
 	cj.Spec.Suspend = suspended
 
 	_, err = k8s.clientset.BatchV1().CronJobs(namespace).Update(
-		k8s.ctx,
+		ctx,
 		cj,
 		metav1.UpdateOptions{},
 	)

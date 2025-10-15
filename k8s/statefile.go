@@ -1,6 +1,7 @@
 package k8s
 
 import (
+	"context"
 	"fmt"
 
 	kubesleep "github.com/Y0-L0/kubesleep/kubesleep"
@@ -16,28 +17,28 @@ type StateFileActionsImpl struct {
 	configmap *corev1.ConfigMap
 }
 
-func (s *StateFileActionsImpl) Update(data map[string]string) error {
+func (s *StateFileActionsImpl) Update(ctx context.Context, data map[string]string) error {
 	var err error
 	s.configmap.Data = data
 	s.configmap, err = s.k8s.clientset.CoreV1().ConfigMaps(s.configmap.ObjectMeta.Namespace).Update(
-		s.k8s.ctx,
+		ctx,
 		s.configmap,
 		metav1.UpdateOptions{},
 	)
 	return err
 }
 
-func (s *StateFileActionsImpl) Delete() error {
+func (s *StateFileActionsImpl) Delete(ctx context.Context) error {
 	return s.k8s.clientset.CoreV1().ConfigMaps(s.configmap.ObjectMeta.Namespace).Delete(
-		s.k8s.ctx,
+		ctx,
 		s.configmap.Name,
 		metav1.DeleteOptions{},
 	)
 }
 
-func (k8s *K8Simpl) GetStateFile(namespace string) (*kubesleep.SuspendState, kubesleep.SuspendStateActions, error) {
+func (k8s *K8Simpl) GetStateFile(ctx context.Context, namespace string) (*kubesleep.SuspendState, kubesleep.SuspendStateActions, error) {
 	configmap, err := k8s.clientset.CoreV1().ConfigMaps(namespace).Get(
-		k8s.ctx,
+		ctx,
 		STATE_FILE_NAME,
 		metav1.GetOptions{},
 	)
@@ -47,7 +48,7 @@ func (k8s *K8Simpl) GetStateFile(namespace string) (*kubesleep.SuspendState, kub
 	return kubesleep.ReadSuspendState(configmap.Data), &StateFileActionsImpl{k8s, configmap}, nil
 }
 
-func (k8s *K8Simpl) CreateStateFile(namespace string, data map[string]string) (kubesleep.SuspendStateActions, error) {
+func (k8s *K8Simpl) CreateStateFile(ctx context.Context, namespace string, data map[string]string) (kubesleep.SuspendStateActions, error) {
 
 	configmap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -58,7 +59,7 @@ func (k8s *K8Simpl) CreateStateFile(namespace string, data map[string]string) (k
 	}
 
 	configmap, err := k8s.clientset.CoreV1().ConfigMaps(namespace).Create(
-		k8s.ctx,
+		ctx,
 		configmap,
 		metav1.CreateOptions{},
 	)
@@ -74,6 +75,6 @@ func (k8s *K8Simpl) CreateStateFile(namespace string, data map[string]string) (k
 	return &StateFileActionsImpl{k8s, configmap}, nil
 }
 
-func (k8s *K8Simpl) DeleteStateFile(namespace string) error {
-	return k8s.clientset.CoreV1().ConfigMaps(namespace).Delete(k8s.ctx, STATE_FILE_NAME, metav1.DeleteOptions{})
+func (k8s *K8Simpl) DeleteStateFile(ctx context.Context, namespace string) error {
+	return k8s.clientset.CoreV1().ConfigMaps(namespace).Delete(ctx, STATE_FILE_NAME, metav1.DeleteOptions{})
 }

@@ -1,6 +1,7 @@
 package kubesleep
 
 import (
+	"context"
 	"log/slog"
 
 	"github.com/stretchr/testify/mock"
@@ -14,10 +15,10 @@ func (s *Unittest) TestNamespaceWake() {
 	k8s, _ := NewMockK8S()
 	stateFile := TEST_SUSPEND_STATE_FILE
 	stateFile.finished = true
-	k8s.On("GetStateFile", "foo").Return(&stateFile, (*MockStateFileActions)(nil), nil)
-	k8s.On("ScaleSuspendable", "foo", mock.Anything, mock.Anything, mock.Anything).Return(errExpected)
+	k8s.On("GetStateFile", mock.Anything, "foo").Return(&stateFile, (*MockStateFileActions)(nil), nil)
+	k8s.On("ScaleSuspendable", mock.Anything, "foo", mock.Anything, mock.Anything, mock.Anything).Return(errExpected)
 
-	err := NewSuspendableNamespace("foo", true).wake(k8s)
+	err := NewSuspendableNamespace("foo", true).wake(context.TODO(), k8s)
 
 	k8s.AssertExpectations(s.T())
 	s.Require().ErrorIs(err, errExpected)
@@ -25,10 +26,10 @@ func (s *Unittest) TestNamespaceWake() {
 
 func (s *Unittest) TestNamespaceWakeFailsWhenSuspendInProgress() {
 	k8s, _ := NewMockK8S()
-	k8s.On("GetStateFile", "foo").Return(&TEST_SUSPEND_STATE_FILE, (*MockStateFileActions)(nil), nil)
+	k8s.On("GetStateFile", mock.Anything, "foo").Return(&TEST_SUSPEND_STATE_FILE, (*MockStateFileActions)(nil), nil)
 
 	ns := &suspendableNamespaceImpl{name: "foo"}
-	err := ns.wake(k8s)
+	err := ns.wake(context.TODO(), k8s)
 
 	k8s.AssertExpectations(s.T())
 	s.Require().Error(err)
@@ -37,9 +38,9 @@ func (s *Unittest) TestNamespaceWakeFailsWhenSuspendInProgress() {
 
 func (s *Unittest) TestNamespaceSuspendStatefulSetError() {
 	k8s, _ := NewMockK8S()
-	k8s.On("GetSuspendables", "foo").Return(map[string]Suspendable{}, errExpected)
+	k8s.On("GetSuspendables", mock.Anything, "foo").Return(map[string]Suspendable{}, errExpected)
 
-	err := NewSuspendableNamespace("foo", true).suspend(k8s)
+	err := NewSuspendableNamespace("foo", true).suspend(context.TODO(), k8s)
 
 	k8s.AssertExpectations(s.T())
 	s.Require().Equal(errExpected, err)
@@ -47,10 +48,10 @@ func (s *Unittest) TestNamespaceSuspendStatefulSetError() {
 
 func (s *Unittest) TestNamespaceSuspendCreateStatefileFailed() {
 	k8s, _ := NewMockK8S()
-	k8s.On("GetSuspendables", "foo").Return(map[string]Suspendable{}, nil)
-	k8s.On("CreateStateFile", "foo", mock.Anything).Return((*MockStateFileActions)(nil), errExpected)
+	k8s.On("GetSuspendables", mock.Anything, "foo").Return(map[string]Suspendable{}, nil)
+	k8s.On("CreateStateFile", mock.Anything, "foo", mock.Anything).Return((*MockStateFileActions)(nil), errExpected)
 
-	err := NewSuspendableNamespace("foo", true).suspend(k8s)
+	err := NewSuspendableNamespace("foo", true).suspend(context.TODO(), k8s)
 
 	k8s.AssertExpectations(s.T())
 	s.Require().Equal(errExpected, err)
@@ -67,10 +68,10 @@ func (s *Unittest) TestSuspendConflict() {
 		slog.Debug("Mock suspend returning conflictErr")
 		return conflictErr
 	}
-	k8s.On("GetSuspendables", "foo").Return(map[string]Suspendable{sus.Identifier(): sus}, nil)
-	k8s.On("CreateStateFile", "foo", mock.Anything).Return(&actions, nil)
+	k8s.On("GetSuspendables", mock.Anything, "foo").Return(map[string]Suspendable{sus.Identifier(): sus}, nil)
+	k8s.On("CreateStateFile", mock.Anything, "foo", mock.Anything).Return(&actions, nil)
 
-	err := NewSuspendableNamespace("foo", true).suspend(k8s)
+	err := NewSuspendableNamespace("foo", true).suspend(context.TODO(), k8s)
 
 	k8s.AssertExpectations(s.T())
 	s.Require().ErrorIs(err, conflictErr)
@@ -82,11 +83,11 @@ func (s *Unittest) TestNamespaceSuspend() {
 	actions := MockStateFileActions{}
 	sus := TEST_SUSPENDABLE
 	sus.Suspend = func() error { return nil }
-	k8s.On("GetSuspendables", "foo").Return(map[string]Suspendable{sus.Identifier(): sus}, nil)
-	k8s.On("CreateStateFile", "foo", mock.Anything).Return(&actions, nil)
-	actions.On("Update", mock.Anything).Return(nil)
+	k8s.On("GetSuspendables", mock.Anything, "foo").Return(map[string]Suspendable{sus.Identifier(): sus}, nil)
+	k8s.On("CreateStateFile", mock.Anything, "foo", mock.Anything).Return(&actions, nil)
+	actions.On("Update", mock.Anything, mock.Anything).Return(nil)
 
-	err := NewSuspendableNamespace("foo", true).suspend(k8s)
+	err := NewSuspendableNamespace("foo", true).suspend(context.TODO(), k8s)
 
 	k8s.AssertExpectations(s.T())
 	s.Require().NoError(err)
@@ -94,12 +95,12 @@ func (s *Unittest) TestNamespaceSuspend() {
 
 func (s *Unittest) TestNamespaceEnsureStateFileGetError() {
 	k8s, _ := NewMockK8S()
-	k8s.On("CreateStateFile", "foo", mock.Anything).Return((*MockStateFileActions)(nil), StatefileAlreadyExistsError("foobar"))
-	k8s.On("GetStateFile", "foo").Return((*SuspendState)(nil), (*MockStateFileActions)(nil), errExpected)
+	k8s.On("CreateStateFile", mock.Anything, "foo", mock.Anything).Return((*MockStateFileActions)(nil), StatefileAlreadyExistsError("foobar"))
+	k8s.On("GetStateFile", mock.Anything, "foo").Return((*SuspendState)(nil), (*MockStateFileActions)(nil), errExpected)
 
 	stateFile := NewSuspendState(map[string]Suspendable{}, false)
 	namespace := &suspendableNamespaceImpl{"foo", true}
-	_, _, err := namespace.ensureStateFile(k8s, &stateFile)
+	_, _, err := namespace.ensureStateFile(context.TODO(), k8s, &stateFile)
 
 	k8s.AssertExpectations(s.T())
 	s.Require().Equal(errExpected, err)
@@ -108,12 +109,12 @@ func (s *Unittest) TestNamespaceEnsureStateFileGetError() {
 func (s *Unittest) TestNamespaceEnsureStateFile() {
 	k8s, _ := NewMockK8S()
 	existingStateFile := TEST_SUSPEND_STATE_FILE
-	k8s.On("CreateStateFile", "foo", mock.Anything).Return((*MockStateFileActions)(nil), StatefileAlreadyExistsError("foobar"))
-	k8s.On("GetStateFile", "foo").Return(&existingStateFile, (*MockStateFileActions)(nil), nil)
+	k8s.On("CreateStateFile", mock.Anything, "foo", mock.Anything).Return((*MockStateFileActions)(nil), StatefileAlreadyExistsError("foobar"))
+	k8s.On("GetStateFile", mock.Anything, "foo").Return(&existingStateFile, (*MockStateFileActions)(nil), nil)
 
 	stateFile := NewSuspendState(map[string]Suspendable{}, false)
 	namespace := &suspendableNamespaceImpl{"foo", true}
-	_, _, err := namespace.ensureStateFile(k8s, &stateFile)
+	_, _, err := namespace.ensureStateFile(context.TODO(), k8s, &stateFile)
 
 	k8s.AssertExpectations(s.T())
 	s.Require().NoError(err)

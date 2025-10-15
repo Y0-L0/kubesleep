@@ -1,6 +1,9 @@
 package kubesleep
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+)
 
 type ManifestType int
 
@@ -30,8 +33,8 @@ func (s Suspendable) Identifier() string {
 	return fmt.Sprintf("%d:%s", s.manifestType, s.name)
 }
 
-func (s Suspendable) wake(namespace string, k8s K8S) error {
-	if err := k8s.ScaleSuspendable(namespace, s.manifestType, s.name, s.Replicas); err != nil {
+func (s Suspendable) wake(ctx context.Context, namespace string, k8s K8S) error {
+	if err := k8s.ScaleSuspendable(ctx, namespace, s.manifestType, s.name, s.Replicas); err != nil {
 		return fmt.Errorf("Failed to scale resource: %s of type: %d in Namespace: %s, %w", s.name, s.manifestType, namespace, err)
 	}
 	return nil

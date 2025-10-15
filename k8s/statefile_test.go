@@ -16,32 +16,32 @@ var TEST_SUSPENDABLES = map[string]kubesleep.Suspendable{
 }
 
 func (s *Integrationtest) TestCreateDeleteStatefile() {
-	deleteNamespace, err := testNamespace("create-delete-statefile", s.k8s, false)
+	deleteNamespace, err := testNamespace(s.ctx, "create-delete-statefile", s.k8s, false)
 	s.Require().NoError(err)
 	defer deleteNamespace()
 
-	_, err = s.k8s.CreateStateFile("create-delete-statefile", map[string]string{})
+	_, err = s.k8s.CreateStateFile(s.ctx, "create-delete-statefile", map[string]string{})
 	s.Require().NoError(err)
 
-	err = s.k8s.DeleteStateFile("create-delete-statefile")
+	err = s.k8s.DeleteStateFile(s.ctx, "create-delete-statefile")
 	s.Require().NoError(err)
 }
 
 func (s *Integrationtest) TestCreateStatefileAlreadyExists() {
-	deleteNamespace, err := testNamespace("create-statefile-already-exists", s.k8s, false)
+	deleteNamespace, err := testNamespace(s.ctx, "create-statefile-already-exists", s.k8s, false)
 	s.Require().NoError(err)
 	defer deleteNamespace()
 
-	actions, err := s.k8s.CreateStateFile("create-statefile-already-exists", map[string]string{})
+	actions, err := s.k8s.CreateStateFile(s.ctx, "create-statefile-already-exists", map[string]string{})
 	s.Require().NoError(err)
-	defer actions.Delete()
+	defer actions.Delete(s.ctx)
 
-	_, err = s.k8s.CreateStateFile("create-statefile-already-exists", map[string]string{})
+	_, err = s.k8s.CreateStateFile(s.ctx, "create-statefile-already-exists", map[string]string{})
 	s.Require().ErrorAs(err, new(kubesleep.StatefileAlreadyExistsError))
 }
 
 func (s *Integrationtest) TestUpdateStatefile() {
-	deleteNamespace, err := testNamespace("update-statefile", s.k8s, false)
+	deleteNamespace, err := testNamespace(s.ctx, "update-statefile", s.k8s, false)
 	s.Require().NoError(err)
 	defer deleteNamespace()
 
@@ -49,17 +49,17 @@ func (s *Integrationtest) TestUpdateStatefile() {
 		map[string]kubesleep.Suspendable{},
 		true,
 	)
-	actions, err := s.k8s.CreateStateFile("update-statefile", stateFile.Write())
+	actions, err := s.k8s.CreateStateFile(s.ctx, "update-statefile", stateFile.Write())
 	s.Require().NoError(err)
-	defer s.k8s.DeleteStateFile("update-statefile")
+	defer s.k8s.DeleteStateFile(s.ctx, "update-statefile")
 
 	stateFile = kubesleep.NewSuspendState(
 		TEST_SUSPENDABLES,
 		true,
 	)
-	err = actions.Update(stateFile.Write())
+	err = actions.Update(s.ctx, stateFile.Write())
 
-	actualStateFile, _, err := s.k8s.GetStateFile("update-statefile")
+	actualStateFile, _, err := s.k8s.GetStateFile(s.ctx, "update-statefile")
 	s.Require().NoError(err)
 	slog.Debug("Read updated state file from cluster", "stateFile", stateFile)
 
@@ -73,7 +73,7 @@ func (s *Integrationtest) TestUpdateStatefile() {
 func (s *Integrationtest) TestUpdateStatefileOptimisticConcurrency() {
 	// arrange
 	namespace := "uptate-statefile-optimistic-concurrency"
-	deleteNamespace, err := testNamespace(namespace, s.k8s, false)
+	deleteNamespace, err := testNamespace(s.ctx, namespace, s.k8s, false)
 	s.Require().NoError(err)
 	defer deleteNamespace()
 
@@ -85,19 +85,19 @@ func (s *Integrationtest) TestUpdateStatefileOptimisticConcurrency() {
 		TEST_SUSPENDABLES,
 		true,
 	)
-	actions, err := s.k8s.CreateStateFile(namespace, stateFile1.Write())
+	actions, err := s.k8s.CreateStateFile(s.ctx, namespace, stateFile1.Write())
 	s.Require().NoError(err)
-	defer s.k8s.DeleteStateFile(namespace)
+	defer s.k8s.DeleteStateFile(s.ctx, namespace)
 
 	// act
-	_, initialActions, err := s.k8s.GetStateFile(namespace)
+	_, initialActions, err := s.k8s.GetStateFile(s.ctx, namespace)
 	s.Require().NoError(err)
-	err = actions.Update(stateFile2.Write())
+	err = actions.Update(s.ctx, stateFile2.Write())
 	s.Require().NoError(err)
-	err = initialActions.Update(stateFile1.Write())
+	err = initialActions.Update(s.ctx, stateFile1.Write())
 	s.Require().Error(err)
 
-	actualStateFile, _, err := s.k8s.GetStateFile(namespace)
+	actualStateFile, _, err := s.k8s.GetStateFile(s.ctx, namespace)
 	s.Require().NoError(err)
 
 	s.Require().Equal(

@@ -12,11 +12,11 @@ var STANDARD_NAMESPACES = []kubesleep.SuspendableNamespace{
 }
 
 func (s *Integrationtest) TestGetSuspendableNamespace() {
-	deleteNamespace, err := testNamespace("get-suspendable-namespace", s.k8s, false)
+	deleteNamespace, err := testNamespace(s.ctx, "get-suspendable-namespace", s.k8s, false)
 	s.Require().NoError(err)
 	defer deleteNamespace()
 
-	namespace, err := s.k8s.GetSuspendableNamespace("get-suspendable-namespace")
+	namespace, err := s.k8s.GetSuspendableNamespace(s.ctx, "get-suspendable-namespace")
 	s.Require().NoError(err)
 
 	s.Require().Equal(
@@ -26,11 +26,11 @@ func (s *Integrationtest) TestGetSuspendableNamespace() {
 }
 
 func (s *Integrationtest) TestGetNonSuspendableNamespace() {
-	deleteNamespace, err := testNamespace("get-non-suspendable-namespace", s.k8s, true)
+	deleteNamespace, err := testNamespace(s.ctx, "get-non-suspendable-namespace", s.k8s, true)
 	s.Require().NoError(err)
 	defer deleteNamespace()
 
-	namespace, err := s.k8s.GetSuspendableNamespace("get-non-suspendable-namespace")
+	namespace, err := s.k8s.GetSuspendableNamespace(s.ctx, "get-non-suspendable-namespace")
 	s.Require().NoError(err)
 
 	s.Require().Equal(
@@ -41,11 +41,11 @@ func (s *Integrationtest) TestGetNonSuspendableNamespace() {
 
 func (s *Integrationtest) TestGetNamespace() {
 	expected := append(STANDARD_NAMESPACES, kubesleep.NewSuspendableNamespace("get-namespaces", false))
-	deleteNamespace, err := testNamespace("get-namespaces", s.k8s, false)
+	deleteNamespace, err := testNamespace(s.ctx, "get-namespaces", s.k8s, false)
 	s.Require().NoError(err)
 	defer deleteNamespace()
 
-	namespaces, err := s.k8s.GetSuspendableNamespaces()
+	namespaces, err := s.k8s.GetSuspendableNamespaces(s.ctx)
 	s.Require().NoError(err)
 	for _, e := range expected {
 		s.Require().Contains(namespaces, e)

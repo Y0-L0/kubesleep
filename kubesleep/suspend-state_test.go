@@ -1,6 +1,7 @@
 package kubesleep
 
 import (
+	"context"
 	"fmt"
 	"github.com/stretchr/testify/mock"
 )
@@ -9,13 +10,13 @@ type MockStateFileActions struct {
 	mock.Mock
 }
 
-func (m *MockStateFileActions) Update(data map[string]string) error {
-	args := m.Called(data)
+func (m *MockStateFileActions) Update(ctx context.Context, data map[string]string) error {
+	args := m.Called(ctx, data)
 	return args.Error(0)
 }
 
-func (m *MockStateFileActions) Delete() error {
-	args := m.Called()
+func (m *MockStateFileActions) Delete(ctx context.Context) error {
+	args := m.Called(ctx)
 	return args.Error(0)
 }
 

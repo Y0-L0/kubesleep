@@ -1,6 +1,7 @@
 package kubesleep
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log/slog"
@@ -29,14 +30,14 @@ func (c cliConfig) validate() {
 	}
 }
 
-func (c cliConfig) getNamespaces(k8s K8S) ([]SuspendableNamespace, error) {
+func (c cliConfig) getNamespaces(ctx context.Context, k8s K8S) ([]SuspendableNamespace, error) {
 	if c.allNamespaces {
-		return k8s.GetSuspendableNamespaces()
+		return k8s.GetSuspendableNamespaces(ctx)
 	}
 
 	var namespaces []SuspendableNamespace
 	for _, n := range c.namespaces {
-		ns, err := k8s.GetSuspendableNamespace(n)
+		ns, err := k8s.GetSuspendableNamespace(ctx, n)
 		if err != nil {
 			return nil, err
 		}
@@ -45,7 +46,7 @@ func (c cliConfig) getNamespaces(k8s K8S) ([]SuspendableNamespace, error) {
 	return namespaces, nil
 }
 
-func (c cliConfig) suspend(k8sFactory func() (K8S, error)) error {
+func (c cliConfig) suspend(ctx context.Context, k8sFactory func() (K8S, error)) error {
 	c.validate()
 
 	k8s, err := k8sFactory()
@@ -53,7 +54,7 @@ func (c cliConfig) suspend(k8sFactory func() (K8S, error)) error {
 		return err
 	}
 
-	namespaces, err := c.getNamespaces(k8s)
+	namespaces, err := c.getNamespaces(ctx, k8s)
 	if err != nil {
 		return err
 	}
@@ -70,7 +71,7 @@ func (c cliConfig) suspend(k8sFactory func() (K8S, error)) error {
 			fmt.Fprintf(c.outWriter, "Skipped protected namespace %s\n", ns.Name())
 			continue
 		}
-		err = ns.suspend(k8s)
+		err = ns.suspend(ctx, k8s)
 		if err != nil {
 			return err
 		}
@@ -79,19 +80,19 @@ func (c cliConfig) suspend(k8sFactory func() (K8S, error)) error {
 	return nil
 }
 
-func (c cliConfig) wake(k8sFactory func() (K8S, error)) error {
+func (c cliConfig) wake(ctx context.Context, k8sFactory func() (K8S, error)) error {
 	c.validate()
 	k8s, err := k8sFactory()
 	if err != nil {
 		return err
 	}
 
-	namespaces, err := c.getNamespaces(k8s)
+	namespaces, err := c.getNamespaces(ctx, k8s)
 	if err != nil {
 		return err
 	}
 	for _, ns := range namespaces {
-		err = ns.wake(k8s)
+		err = ns.wake(ctx, k8s)
 		if err != nil {
 			return err
 		}

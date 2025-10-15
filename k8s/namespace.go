@@ -1,6 +1,7 @@
 package k8s
 
 import (
+	"context"
 	"log/slog"
 
 	kubesleep "github.com/Y0-L0/kubesleep/kubesleep"
@@ -8,8 +9,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (k8s K8Simpl) GetSuspendableNamespace(namespace string) (kubesleep.SuspendableNamespace, error) {
-	kubernetesNamespace, err := k8s.clientset.CoreV1().Namespaces().Get(k8s.ctx, namespace, metav1.GetOptions{})
+func (k8s K8Simpl) GetSuspendableNamespace(ctx context.Context, namespace string) (kubesleep.SuspendableNamespace, error) {
+	kubernetesNamespace, err := k8s.clientset.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -17,9 +18,9 @@ func (k8s K8Simpl) GetSuspendableNamespace(namespace string) (kubesleep.Suspenda
 	return buildSuspendableNamespace(*kubernetesNamespace), err
 }
 
-func (k8s K8Simpl) GetSuspendableNamespaces() ([]kubesleep.SuspendableNamespace, error) {
+func (k8s K8Simpl) GetSuspendableNamespaces(ctx context.Context) ([]kubesleep.SuspendableNamespace, error) {
 	var result []kubesleep.SuspendableNamespace
-	namespaces, err := k8s.clientset.CoreV1().Namespaces().List(k8s.ctx, metav1.ListOptions{})
+	namespaces, err := k8s.clientset.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}

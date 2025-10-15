@@ -1,16 +1,17 @@
 package k8s
 
 import (
+	"context"
 	"log/slog"
 
 	kubesleep "github.com/Y0-L0/kubesleep/kubesleep"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (k8s K8Simpl) getStatefulSets(namespace string) (map[string]kubesleep.Suspendable, error) {
+func (k8s K8Simpl) getStatefulSets(ctx context.Context, namespace string) (map[string]kubesleep.Suspendable, error) {
 	statefulSets, err := k8s.clientset.AppsV1().
 		StatefulSets(namespace).
-		List(k8s.ctx, metav1.ListOptions{})
+		List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -22,7 +23,7 @@ func (k8s K8Simpl) getStatefulSets(namespace string) (map[string]kubesleep.Suspe
 		if statefulSet.Spec.Replicas != nil && *statefulSet.Spec.Replicas == 0 {
 			suspend = k8s.noopSuspendStatefulSet(namespace, statefulSet.Name)
 		} else {
-			suspend = k8s.suspendStatefulSet(namespace, statefulSet.Name)
+			suspend = k8s.suspendStatefulSet(ctx, namespace, statefulSet.Name)
 		}
 
 		s := kubesleep.NewSuspendable(
@@ -45,11 +46,11 @@ func (k8s K8Simpl) noopSuspendStatefulSet(namespace, name string) func() error {
 	}
 }
 
-func (k8s K8Simpl) suspendStatefulSet(namespace string, name string) func() error {
+func (k8s K8Simpl) suspendStatefulSet(ctx context.Context, namespace string, name string) func() error {
 	return func() error {
 		scalable, err := k8s.clientset.AppsV1().
 			StatefulSets(namespace).
-			GetScale(k8s.ctx, name, metav1.GetOptions{})
+			GetScale(ctx, name, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
@@ -57,7 +58,7 @@ func (k8s K8Simpl) suspendStatefulSet(namespace string, name string) func() erro
 		scalable.Spec.Replicas = int32(0)
 
 		_, err = k8s.clientset.AppsV1().StatefulSets(namespace).UpdateScale(
-			k8s.ctx,
+			ctx,
 			scalable.Name,
 			scalable,
 			metav1.UpdateOptions{},
@@ -70,17 +71,17 @@ func (k8s K8Simpl) suspendStatefulSet(namespace string, name string) func() erro
 	}
 }
 
-func (k8s K8Simpl) scaleStatefulSet(namespace string, name string, Replicas int32) error {
+func (k8s K8Simpl) scaleStatefulSet(ctx context.Context, namespace string, name string, Replicas int32) error {
 	scalable, err := k8s.clientset.AppsV1().
 		StatefulSets(namespace).
-		GetScale(k8s.ctx, name, metav1.GetOptions{})
+		GetScale(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 
 	scalable.Spec.Replicas = Replicas
 	_, err = k8s.clientset.AppsV1().StatefulSets(scalable.Namespace).UpdateScale(
-		k8s.ctx,
+		ctx,
 		scalable.Name,
 		scalable,
 		metav1.UpdateOptions{},

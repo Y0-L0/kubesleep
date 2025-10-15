@@ -1,6 +1,7 @@
 package kubesleep
 
 import (
+	"context"
 	"errors"
 
 	"github.com/stretchr/testify/mock"
@@ -10,13 +11,13 @@ var errExpected = errors.New("broken k8s factory")
 
 type mockK8S struct{ mock.Mock }
 
-func (m *mockK8S) GetSuspendableNamespaces() ([]SuspendableNamespace, error) {
-	args := m.Called()
+func (m *mockK8S) GetSuspendableNamespaces(ctx context.Context) ([]SuspendableNamespace, error) {
+	args := m.Called(ctx)
 	return args.Get(0).([]SuspendableNamespace), args.Error(1)
 }
 
-func (m *mockK8S) GetSuspendableNamespace(ns string) (SuspendableNamespace, error) {
-	args := m.Called(ns)
+func (m *mockK8S) GetSuspendableNamespace(ctx context.Context, ns string) (SuspendableNamespace, error) {
+	args := m.Called(ctx, ns)
 	return args.Get(0).(SuspendableNamespace), args.Error(1)
 }
 
@@ -40,28 +41,28 @@ func (m *mockK8S) ScaleStatefulSet(ns, name string, replicas int32) error {
 	return args.Error(0)
 }
 
-func (m *mockK8S) GetStateFile(ns string) (*SuspendState, SuspendStateActions, error) {
-	args := m.Called(ns)
+func (m *mockK8S) GetStateFile(ctx context.Context, ns string) (*SuspendState, SuspendStateActions, error) {
+	args := m.Called(ctx, ns)
 	return args.Get(0).(*SuspendState), args.Get(1).(SuspendStateActions), args.Error(2)
 }
 
-func (m *mockK8S) CreateStateFile(ns string, data map[string]string) (SuspendStateActions, error) {
-	args := m.Called(ns, data)
+func (m *mockK8S) CreateStateFile(ctx context.Context, ns string, data map[string]string) (SuspendStateActions, error) {
+	args := m.Called(ctx, ns, data)
 	return args.Get(0).(SuspendStateActions), args.Error(1)
 }
 
-func (m *mockK8S) DeleteStateFile(ns string) error {
-	args := m.Called(ns)
+func (m *mockK8S) DeleteStateFile(ctx context.Context, ns string) error {
+	args := m.Called(ctx, ns)
 	return args.Error(0)
 }
 
-func (m *mockK8S) GetSuspendables(ns string) (map[string]Suspendable, error) {
-	args := m.Called(ns)
+func (m *mockK8S) GetSuspendables(ctx context.Context, ns string) (map[string]Suspendable, error) {
+	args := m.Called(ctx, ns)
 	return args.Get(0).(map[string]Suspendable), args.Error(1)
 }
 
-func (m *mockK8S) ScaleSuspendable(ns string, manifestType ManifestType, name string, replicas int32) error {
-	args := m.Called(ns, manifestType, name, replicas)
+func (m *mockK8S) ScaleSuspendable(ctx context.Context, ns string, manifestType ManifestType, name string, replicas int32) error {
+	args := m.Called(ctx, ns, manifestType, name, replicas)
 	return args.Error(0)
 }
 

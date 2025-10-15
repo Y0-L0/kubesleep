@@ -1,6 +1,7 @@
 package kubesleep
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -13,8 +14,8 @@ const (
 )
 
 type SuspendStateActions interface {
-	Update(map[string]string) error
-	Delete() error
+	Update(context.Context, map[string]string) error
+	Delete(context.Context) error
 }
 
 type suspendStateDto struct {

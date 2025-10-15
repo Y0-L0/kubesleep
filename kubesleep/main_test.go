@@ -52,7 +52,7 @@ func (s *Unittest) TestMain_UpdateCheck_IgnoreError() {
 
 func (s *Unittest) TestMain_UpdateCheck_NonBlocking() {
 	k8s, factory := NewMockK8S()
-	k8s.On("GetSuspendableNamespace", mock.Anything).Return(&suspendableNamespaceImpl{}, errExpected)
+	k8s.On("GetSuspendableNamespace", mock.Anything, mock.Anything).Return(&suspendableNamespaceImpl{}, errExpected)
 
 	var outWriter, errWriter bytes.Buffer
 	release := make(chan struct{})
@@ -89,7 +89,7 @@ func (s *Unittest) TestMain_PrintsUpdateWhenReady() {
 	}
 
 	// Hold command execution until the update goroutine signaled readiness
-	k8s.On("GetSuspendableNamespace", mock.Anything).
+	k8s.On("GetSuspendableNamespace", mock.Anything, mock.Anything).
 		Run(func(_ mock.Arguments) { <-updateDone }).
 		Return(&suspendableNamespaceImpl{}, errExpected)
 

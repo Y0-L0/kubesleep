@@ -71,9 +71,9 @@ func (s *Unittest) TestValidCliArguments() {
 		s.Run(testCase.name, func() {
 			k8s, factory := NewMockK8S()
 			if testCase.config.allNamespaces {
-				k8s.On("GetSuspendableNamespaces").Return([]SuspendableNamespace{}, errExpected)
+				k8s.On("GetSuspendableNamespaces", mock.Anything).Return([]SuspendableNamespace{}, errExpected)
 			} else {
-				k8s.On("GetSuspendableNamespace", mock.Anything).Return(&suspendableNamespaceImpl{}, errExpected)
+				k8s.On("GetSuspendableNamespace", mock.Anything, mock.Anything).Return(&suspendableNamespaceImpl{}, errExpected)
 			}
 
 			command, config := NewParser(
@@ -173,7 +173,7 @@ func (s *Unittest) TestLogLevel() {
 	for _, testCase := range tests {
 		s.Run(testCase.name, func() {
 			k8s, factory := NewMockK8S()
-			k8s.On("GetSuspendableNamespace", mock.Anything).Return(&suspendableNamespaceImpl{}, errExpected)
+			k8s.On("GetSuspendableNamespace", mock.Anything, mock.Anything).Return(&suspendableNamespaceImpl{}, errExpected)
 
 			var logLevel slog.Level
 

@@ -1,8 +1,6 @@
 package k8s
 
 import (
-	"context"
-
 	kubesleep "github.com/Y0-L0/kubesleep/kubesleep"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -10,8 +8,6 @@ import (
 
 type K8Simpl struct {
 	clientset *kubernetes.Clientset
-	ctx       context.Context
-	cancel    context.CancelFunc
 }
 
 func NewK8S() (kubesleep.K8S, error) {
@@ -30,7 +26,6 @@ func NewK8S() (kubesleep.K8S, error) {
 	if err != nil {
 		return nil, err
 	}
-	k8s.ctx, k8s.cancel = context.WithCancel(context.TODO())
 
 	return k8s, nil
 }

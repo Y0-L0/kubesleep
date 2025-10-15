@@ -84,7 +84,7 @@ func NewParser(args []string, k8sFactory func() (K8S, error), setupLogging func(
 				cmd.PrintErrln("--all-namespaces cannot be combined with --namespace or --force")
 				return CliArgumentError("missing namespace or all-namespaces argument")
 			}
-			return config.suspend(k8sFactory)
+			return config.suspend(cmd.Context(), k8sFactory)
 		},
 	}
 	suspendCmd.Flags().BoolVarP(
@@ -110,7 +110,7 @@ func NewParser(args []string, k8sFactory func() (K8S, error), setupLogging func(
 				cmd.PrintErrln("--namespace (-n) must be specified")
 				return CliArgumentError("missing namespace argument")
 			}
-			return config.wake(k8sFactory)
+			return config.wake(cmd.Context(), k8sFactory)
 		},
 	}
 

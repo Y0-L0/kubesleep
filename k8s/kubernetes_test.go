@@ -37,15 +37,15 @@ func (s *Integrationtest) TestLoadKubeconfig() {
 }
 
 func (s *Integrationtest) TestDeploymentStatefulsetNameConflict() {
-	deleteNamespace, err := testNamespace("deployment-statefulset-name-conflict", s.k8s, false)
+	deleteNamespace, err := testNamespace(s.ctx, "deployment-statefulset-name-conflict", s.k8s, false)
 	s.Require().NoError(err)
 	defer deleteNamespace()
 
-	deleteStatefulSet, err := CreateStatefulSet(*s.k8s, "deployment-statefulset-name-conflict", "test-statefulset", int32(2))
+	deleteStatefulSet, err := CreateStatefulSet(s.ctx, *s.k8s, "deployment-statefulset-name-conflict", "test-statefulset", int32(2))
 	s.Require().NoError(err)
 	defer deleteStatefulSet()
 
-	deleteDeployment, err := CreateDeployment(*s.k8s, "deployment-statefulset-name-conflict", "test-statefulset", int32(2))
+	deleteDeployment, err := CreateDeployment(s.ctx, *s.k8s, "deployment-statefulset-name-conflict", "test-statefulset", int32(2))
 	s.Require().NoError(err)
 	defer deleteDeployment()
 }
