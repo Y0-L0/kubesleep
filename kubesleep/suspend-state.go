@@ -128,3 +128,14 @@ func newSuspendStateFromJson(data string) *SuspendState {
 	slog.Debug("Read state file from json", "json", data, "SuspendStateFile", stateFile)
 	return &stateFile
 }
+
+// SuspendedReplicas returns the sum of replicas for all suspendables
+// recorded in this state file. This approximates the number of pods
+// that were suspended when the state was written.
+func (s *SuspendState) SuspendedReplicas() int32 {
+	var total int32
+	for _, sus := range s.suspendables {
+		total += sus.Replicas
+	}
+	return total
+}

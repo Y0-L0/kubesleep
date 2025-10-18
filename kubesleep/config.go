@@ -106,6 +106,7 @@ type status struct {
 	name      string
 	status    string
 	protected bool
+	suspended int32
 }
 
 func (c cliConfig) status(ctx context.Context, k8sFactory func() (K8S, error)) error {
@@ -122,11 +123,11 @@ func (c cliConfig) status(ctx context.Context, k8sFactory func() (K8S, error)) e
 
 	var table []status
 	for _, namespace := range namespaces {
-		statusString, err := namespace.status(ctx, k8s)
+		statusString, suspended, err := namespace.status(ctx, k8s)
 		if err != nil {
 			return err
 		}
-		row := status{namespace.Name(), statusString, namespace.Protected()}
+		row := status{name: namespace.Name(), status: statusString, protected: namespace.Protected(), suspended: suspended}
 		table = append(table, row)
 	}
 	c.printStatus(table)
@@ -135,9 +136,12 @@ func (c cliConfig) status(ctx context.Context, k8sFactory func() (K8S, error)) e
 
 func (c cliConfig) printStatus(statusTable []status) {
 	w := tabwriter.NewWriter(c.outWriter, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "name\tstatus\tprotected\t")
+	fmt.Fprintln(w, "name\tstatus\tprotected\tsuspendedPods\t")
+	var total int32
 	for _, row := range statusTable {
-		fmt.Fprintf(w, "%s\t%s\t%t\t\n", row.name, row.status, row.protected)
+		fmt.Fprintf(w, "%s\t%s\t%t\t%d\t\n", row.name, row.status, row.protected, row.suspended)
+		total += row.suspended
 	}
 	w.Flush()
+	fmt.Fprintf(c.outWriter, "Total suspended pods: %d\n", total)
 }
