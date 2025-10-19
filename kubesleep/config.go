@@ -7,6 +7,8 @@ import (
 	"log/slog"
 	"slices"
 	"text/tabwriter"
+
+	"golang.org/x/sync/errgroup"
 )
 
 type cliConfig struct {
@@ -120,16 +122,30 @@ func (c cliConfig) status(ctx context.Context, k8sFactory func() (K8S, error)) e
 	if err != nil {
 		return err
 	}
+	g, ctxGroup := errgroup.WithContext(ctx)
 
-	var table []status
-	for _, namespace := range namespaces {
-		statusString, suspended, err := namespace.status(ctx, k8s)
-		if err != nil {
-			return err
-		}
-		row := status{name: namespace.Name(), status: statusString, protected: namespace.Protected(), suspended: suspended}
-		table = append(table, row)
+	table := make([]status, len(namespaces))
+	for i, namespace := range namespaces {
+		g.Go(func() error {
+			slog.Info("Collecting status for namespace", "namespace", namespace)
+			statusString, suspended, err := namespace.status(ctxGroup, k8s)
+			if err != nil {
+				return err
+			}
+			table[i] = status{
+				name:      namespace.Name(),
+				status:    statusString,
+				protected: namespace.Protected(),
+				suspended: suspended,
+			}
+			slog.Info("Status collected for namespace", "namespace", namespace)
+			return nil
+		})
 	}
+	if err := g.Wait(); err != nil {
+		return err
+	}
+
 	c.printStatus(table)
 	return nil
 }

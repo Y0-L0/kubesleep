@@ -20,6 +20,8 @@ func NewK8S() (kubesleep.K8S, error) {
 	if err != nil {
 		return nil, err
 	}
+	clientConfig.QPS = 10
+	clientConfig.Burst = 100
 
 	k8s := &K8Simpl{}
 	k8s.clientset, err = kubernetes.NewForConfig(clientConfig)
