@@ -1,6 +1,7 @@
 package kubesleep
 
 import (
+	"bytes"
 	"context"
 	"github.com/stretchr/testify/mock"
 	"io"
@@ -139,4 +140,54 @@ func (s *Unittest) TestWakeEmptyNamespace() {
 
 	k8s.AssertExpectations(s.T())
 	s.Require().NoError(err)
+}
+
+func (s *Unittest) TestStatusBrokenK8SFactory() {
+	err := cliConfig{namespaces: []string{"foo"}, outWriter: io.Discard}.status(context.TODO(), brokenK8SFactory)
+
+	s.Require().Equal(errExpected, err)
+}
+
+func (s *Unittest) TestStatusAllNamespacesError() {
+	k8s, factory := NewMockK8S()
+	k8s.On("GetSuspendableNamespaces", mock.Anything).Return([]SuspendableNamespace{}, errExpected)
+
+	err := cliConfig{allNamespaces: true, outWriter: io.Discard}.status(context.TODO(), factory)
+
+	k8s.AssertExpectations(s.T())
+	s.Require().Equal(err, errExpected)
+}
+
+func (s *Unittest) TestStatusSingleNamespace_Running() {
+	var out bytes.Buffer
+	k8s, factory := NewMockK8S()
+	k8s.On("GetSuspendableNamespace", mock.Anything, "foo").Return(NewSuspendableNamespace("foo", false), nil)
+	k8s.On("GetStateFile", mock.Anything, "foo").Return((*SuspendState)(nil), (*MockStateFileActions)(nil), StatefileNotFoundError("not found"))
+
+	err := cliConfig{namespaces: []string{"foo"}, outWriter: &out}.status(context.TODO(), factory)
+
+	k8s.AssertExpectations(s.T())
+	s.Require().NoError(err)
+	s.Equal(
+		"name  status   protected  suspendedPods  \n"+
+			"foo   running  false      0              \n"+
+			"Total suspended pods: 0\n",
+		out.String(),
+	)
+}
+
+func (s *Unittest) TestStatusSingleNamespace_Suspended() {
+	var out bytes.Buffer
+	k8s, factory := NewMockK8S()
+	k8s.On("GetSuspendableNamespace", mock.Anything, "foo").Return(NewSuspendableNamespace("foo", false), nil)
+	state := NewSuspendState(TEST_SUSPENDABLES, true)
+	k8s.On("GetStateFile", mock.Anything, "foo").Return(&state, (*MockStateFileActions)(nil), nil)
+
+	err := cliConfig{namespaces: []string{"foo"}, outWriter: &out}.status(context.TODO(), factory)
+
+	k8s.AssertExpectations(s.T())
+	s.Require().NoError(err)
+	actual := out.String()
+	s.Contains(actual, "suspended")
+	s.Contains(actual, "Total suspended pods: 2")
 }
