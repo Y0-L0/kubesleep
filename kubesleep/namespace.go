@@ -100,7 +100,9 @@ func (n *suspendableNamespaceImpl) suspend(ctx context.Context, k8s K8S) error {
 	slog.Debug("Suspending workloads", "stateFile", stateFile, "namespace", n.name)
 
 	for _, sus := range suspendables {
-		err = repeat(sus.Suspend)
+		err := repeat(func() error {
+			return sus.Suspend(ctx)
+		})
 		if err != nil {
 			return err
 		}

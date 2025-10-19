@@ -17,10 +17,10 @@ type Suspendable struct {
 	manifestType ManifestType
 	name         string
 	Replicas     int32
-	Suspend      func() error
+	Suspend      func(context.Context) error
 }
 
-func NewSuspendable(manifestType ManifestType, name string, Replicas int32, suspend func() error) Suspendable {
+func NewSuspendable(manifestType ManifestType, name string, Replicas int32, suspend func(context.Context) error) Suspendable {
 	return Suspendable{
 		manifestType: manifestType,
 		name:         name,

@@ -19,11 +19,11 @@ func (k8s K8Simpl) getCronJobs(ctx context.Context, namespace string) (map[strin
 	suspendables := map[string]kubesleep.Suspendable{}
 
 	for _, job := range cronJobs.Items {
-		var suspend func() error
+		var suspend func(context.Context) error
 		if job.Spec.Suspend != nil && *job.Spec.Suspend {
 			suspend = k8s.noopSuspendCronJob(namespace, job.Name)
 		} else {
-			suspend = k8s.suspendCronJob(ctx, namespace, job.Name)
+			suspend = k8s.suspendCronJob(namespace, job.Name)
 		}
 
 		s := kubesleep.NewSuspendable(
@@ -39,15 +39,15 @@ func (k8s K8Simpl) getCronJobs(ctx context.Context, namespace string) (map[strin
 	return suspendables, nil
 }
 
-func (k8s K8Simpl) noopSuspendCronJob(namespace, name string) func() error {
-	return func() error {
+func (k8s K8Simpl) noopSuspendCronJob(namespace, name string) func(context.Context) error {
+	return func(ctx context.Context) error {
 		slog.Debug("CronJob already suspended; skipping suspend", "namespace", namespace, "name", name)
 		return nil
 	}
 }
 
-func (k8s K8Simpl) suspendCronJob(ctx context.Context, namespace, name string) func() error {
-	return func() error {
+func (k8s K8Simpl) suspendCronJob(namespace, name string) func(context.Context) error {
+	return func(ctx context.Context) error {
 		result := true
 		return k8s.setCronJobSuspended(ctx, namespace, name, &result)
 	}

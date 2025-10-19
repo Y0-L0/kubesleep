@@ -19,11 +19,11 @@ func (k8s K8Simpl) getDeployments(ctx context.Context, namespace string) (map[st
 	suspendables := map[string]kubesleep.Suspendable{}
 
 	for _, deployment := range deployments.Items {
-		var suspend func() error
+		var suspend func(context.Context) error
 		if deployment.Spec.Replicas != nil && *deployment.Spec.Replicas == 0 {
 			suspend = k8s.noopSuspendDeployment(namespace, deployment.Name)
 		} else {
-			suspend = k8s.suspendDeployment(ctx, namespace, deployment.Name)
+			suspend = k8s.suspendDeployment(namespace, deployment.Name)
 		}
 
 		s := kubesleep.NewSuspendable(
@@ -39,15 +39,15 @@ func (k8s K8Simpl) getDeployments(ctx context.Context, namespace string) (map[st
 	return suspendables, nil
 }
 
-func (k8s K8Simpl) noopSuspendDeployment(namespace, name string) func() error {
-	return func() error {
+func (k8s K8Simpl) noopSuspendDeployment(namespace, name string) func(context.Context) error {
+	return func(ctx context.Context) error {
 		slog.Debug("Deployment already at 0 replicas; skipping suspend", "namespace", namespace, "name", name)
 		return nil
 	}
 }
 
-func (k8s K8Simpl) suspendDeployment(ctx context.Context, namespace string, name string) func() error {
-	return func() error {
+func (k8s K8Simpl) suspendDeployment(namespace string, name string) func(context.Context) error {
+	return func(ctx context.Context) error {
 		scalable, err := k8s.clientset.AppsV1().
 			Deployments(namespace).
 			GetScale(ctx, name, metav1.GetOptions{})

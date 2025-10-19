@@ -92,7 +92,7 @@ func (s *Integrationtest) TestSuspendDeployment() {
 	before := s.getSuspendable("suspend-deployments-via-suspendable", "0:test-deployment")
 	s.Require().Equal(int32(2), before.Replicas)
 
-	s.Require().NoError(before.Suspend())
+	s.Require().NoError(before.Suspend(s.ctx))
 
 	actual := s.getSuspendable("suspend-deployments-via-suspendable", "0:test-deployment")
 	s.Require().Equal(int32(0), actual.Replicas)
@@ -113,7 +113,7 @@ func (s *Integrationtest) TestAlreadySuspendedDeployment() {
 	before := s.getSuspendable("skip-already-suspended-deployment", "0:test-deployment")
 	s.Require().Equal(int32(0), before.Replicas)
 
-	s.Require().NoError(before.Suspend())
+	s.Require().NoError(before.Suspend(s.ctx))
 
 	afterScale, err := s.k8s.clientset.AppsV1().Deployments("skip-already-suspended-deployment").GetScale(s.ctx, "test-deployment", metav1.GetOptions{})
 	s.Require().NoError(err)

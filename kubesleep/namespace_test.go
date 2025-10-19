@@ -64,7 +64,7 @@ func (s *Unittest) TestSuspendConflict() {
 		ErrStatus: metav1.Status{Reason: metav1.StatusReasonConflict},
 	}
 	sus := TEST_SUSPENDABLE
-	sus.Suspend = func() error {
+	sus.Suspend = func(context.Context) error {
 		slog.Debug("Mock suspend returning conflictErr")
 		return conflictErr
 	}
@@ -82,7 +82,7 @@ func (s *Unittest) TestNamespaceSuspend() {
 	k8s, _ := NewMockK8S()
 	actions := MockStateFileActions{}
 	sus := TEST_SUSPENDABLE
-	sus.Suspend = func() error { return nil }
+	sus.Suspend = func(context.Context) error { return nil }
 	k8s.On("GetSuspendables", mock.Anything, "foo").Return(map[string]Suspendable{sus.Identifier(): sus}, nil)
 	k8s.On("CreateStateFile", mock.Anything, "foo", mock.Anything).Return(&actions, nil)
 	actions.On("Update", mock.Anything, mock.Anything).Return(nil)

@@ -91,7 +91,7 @@ func (s *Integrationtest) TestCronJob_Suspend() {
 	before := s.getSuspendable("suspend-cronjobs", "2:test-cronjob")
 	s.Require().Equal(int32(1), before.Replicas)
 
-	s.Require().NoError(before.Suspend())
+	s.Require().NoError(before.Suspend(s.ctx))
 
 	actual := s.getSuspendable("suspend-cronjobs", "2:test-cronjob")
 	s.Require().Equal(int32(0), actual.Replicas)
@@ -131,7 +131,7 @@ func (s *Integrationtest) TestCronJob_SuspendNoopWhenAlreadySuspended() {
 	s.Require().NoError(err)
 
 	sus := s.getSuspendable("suspend-cronjobs-noop", "2:"+name)
-	s.Require().NoError(sus.Suspend())
+	s.Require().NoError(sus.Suspend(s.ctx))
 
 	after, err := s.k8s.clientset.BatchV1().CronJobs("suspend-cronjobs-noop").Get(
 		s.ctx,

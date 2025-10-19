@@ -19,11 +19,11 @@ func (k8s K8Simpl) getStatefulSets(ctx context.Context, namespace string) (map[s
 	suspendables := map[string]kubesleep.Suspendable{}
 
 	for _, statefulSet := range statefulSets.Items {
-		var suspend func() error
+		var suspend func(context.Context) error
 		if statefulSet.Spec.Replicas != nil && *statefulSet.Spec.Replicas == 0 {
 			suspend = k8s.noopSuspendStatefulSet(namespace, statefulSet.Name)
 		} else {
-			suspend = k8s.suspendStatefulSet(ctx, namespace, statefulSet.Name)
+			suspend = k8s.suspendStatefulSet(namespace, statefulSet.Name)
 		}
 
 		s := kubesleep.NewSuspendable(
@@ -39,15 +39,15 @@ func (k8s K8Simpl) getStatefulSets(ctx context.Context, namespace string) (map[s
 	return suspendables, nil
 }
 
-func (k8s K8Simpl) noopSuspendStatefulSet(namespace, name string) func() error {
-	return func() error {
+func (k8s K8Simpl) noopSuspendStatefulSet(namespace, name string) func(context.Context) error {
+	return func(ctx context.Context) error {
 		slog.Debug("StatefulSet already at 0 replicas; skipping suspend", "namespace", namespace, "name", name)
 		return nil
 	}
 }
 
-func (k8s K8Simpl) suspendStatefulSet(ctx context.Context, namespace string, name string) func() error {
-	return func() error {
+func (k8s K8Simpl) suspendStatefulSet(namespace string, name string) func(context.Context) error {
+	return func(ctx context.Context) error {
 		scalable, err := k8s.clientset.AppsV1().
 			StatefulSets(namespace).
 			GetScale(ctx, name, metav1.GetOptions{})

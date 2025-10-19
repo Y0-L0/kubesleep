@@ -100,7 +100,7 @@ func (s *Integrationtest) TestSuspendStatefulSet() {
 	before := s.getSuspendable("suspend-statefulsets-via-suspendable", "1:test-statefulset")
 	s.Require().Equal(int32(2), before.Replicas)
 
-	s.Require().NoError(before.Suspend())
+	s.Require().NoError(before.Suspend(s.ctx))
 
 	actual := s.getSuspendable("suspend-statefulsets-via-suspendable", "1:test-statefulset")
 	s.Require().Equal(int32(0), actual.Replicas)
@@ -121,7 +121,7 @@ func (s *Integrationtest) TestAlreadySuspendedStatefulSet() {
 	before := s.getSuspendable("skip-already-suspended-statefulset", "1:test-statefulset")
 	s.Require().Equal(int32(0), before.Replicas)
 
-	s.Require().NoError(before.Suspend())
+	s.Require().NoError(before.Suspend(s.ctx))
 
 	afterScale, err := s.k8s.clientset.AppsV1().StatefulSets("skip-already-suspended-statefulset").GetScale(s.ctx, "test-statefulset", metav1.GetOptions{})
 	s.Require().NoError(err)
