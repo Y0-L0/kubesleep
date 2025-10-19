@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"golang.org/x/sync/errgroup"
 	"k8s.io/utils/strings/slices"
 )
 
@@ -51,12 +52,17 @@ func (n *suspendableNamespaceImpl) wake(ctx context.Context, k8s K8S) error {
 	if !stateFile.finished {
 		return fmt.Errorf("cannot wake the namespace %s because the namespace is partially suspended. Please first resume / retry the suspend operation", n.name)
 	}
+	g, ctxGroup := errgroup.WithContext(ctx)
 
 	for _, s := range stateFile.suspendables {
-		err = repeat(func() error { return s.wake(ctx, n.name, k8s) })
-		if err != nil {
-			return err
-		}
+		g.Go(func() error {
+			return repeat(func() error {
+				return s.wake(ctxGroup, n.name, k8s)
+			})
+		})
+	}
+	if err := g.Wait(); err != nil {
+		return err
 	}
 	return actions.Delete(ctx)
 }
@@ -99,13 +105,16 @@ func (n *suspendableNamespaceImpl) suspend(ctx context.Context, k8s K8S) error {
 
 	slog.Debug("Suspending workloads", "stateFile", stateFile, "namespace", n.name)
 
+	g, ctxGroup := errgroup.WithContext(ctx)
 	for _, sus := range suspendables {
-		err := repeat(func() error {
-			return sus.Suspend(ctx)
+		g.Go(func() error {
+			return repeat(func() error {
+				return sus.Suspend(ctxGroup)
+			})
 		})
-		if err != nil {
-			return err
-		}
+	}
+	if err := g.Wait(); err != nil {
+		return err
 	}
 
 	stateFile.finished = true
