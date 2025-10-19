@@ -125,12 +125,11 @@ func (c cliConfig) status(ctx context.Context, k8sFactory func() (K8S, error)) e
 	if err != nil {
 		return err
 	}
+	table := make([]status, len(namespaces))
 	g, ctxGroup := errgroup.WithContext(ctx)
 
-	table := make([]status, len(namespaces))
 	for i, namespace := range namespaces {
 		g.Go(func() error {
-			slog.Info("Collecting status for namespace", "namespace", namespace)
 			statusString, suspended, err := namespace.status(ctxGroup, k8s)
 			if err != nil {
 				return err
@@ -141,7 +140,6 @@ func (c cliConfig) status(ctx context.Context, k8sFactory func() (K8S, error)) e
 				protected: namespace.Protected(),
 				suspended: suspended,
 			}
-			slog.Info("Status collected for namespace", "namespace", namespace)
 			return nil
 		})
 	}
