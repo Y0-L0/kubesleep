@@ -25,6 +25,9 @@ func (c cliConfig) validate() {
 	if (c.namespaces == nil || len(c.namespaces) == 0) && !c.allNamespaces {
 		panic("invalid namespaces value")
 	}
+	if len(c.namespaces) > 0 && c.allNamespaces {
+		panic("namespaces and allNamespaces can't both be specified")
+	}
 	if slices.Contains(c.namespaces, "") {
 		panic("Invalid namespace value")
 	}

@@ -3,6 +3,7 @@ package kubesleep
 import (
 	"log/slog"
 	"os"
+	"slices"
 
 	"github.com/Y0-L0/kubesleep/kubesleep/version"
 	"github.com/spf13/cobra"
@@ -19,6 +20,26 @@ func SetupLogging(logLevel slog.Level) {
 	})
 	logger := slog.New(handler)
 	slog.SetDefault(logger)
+}
+
+func validateAllNamespaces(config *cliConfig) error {
+	if (config.namespaces == nil || len(config.namespaces) == 0) && !config.allNamespaces {
+		return CliArgumentError("Missing namespace or all-namespaces argument.\neither --all-namespaces or --namespace (-n) must be specified.")
+	}
+	if len(config.namespaces) > 0 && config.allNamespaces {
+		return CliArgumentError("Cli argument collision.\n--namespace (-n) and --all-namespaces can't both be specified.")
+	}
+	if config.allNamespaces && config.force {
+		return CliArgumentError("Invalid CLI argument combination.\n--all-namespaces cannot be combined with --force")
+	}
+	return validateNamespaces(config.namespaces)
+}
+
+func validateNamespaces(namespaces []string) error {
+	if slices.Contains(namespaces, "") {
+		return CliArgumentError("Invalid namespace value")
+	}
+	return nil
 }
 
 func NewParser(args []string, k8sFactory func() (K8S, error), setupLogging func(slog.Level)) (*cobra.Command, *cliConfig) {
@@ -76,13 +97,8 @@ func NewParser(args []string, k8sFactory func() (K8S, error), setupLogging func(
 		Short: "Suspend one or multiple kubernetes namespaces.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			slog.Debug("Parsed cli arguments for the suspend subcommand", "config", config)
-			if !config.allNamespaces && len(config.namespaces) == 0 {
-				cmd.PrintErrln("either --all-namespaces or --namespace (-n) must be specified")
-				return CliArgumentError("missing namespace or all-namespaces argument")
-			}
-			if config.allNamespaces && (len(config.namespaces) > 0 || config.force) {
-				cmd.PrintErrln("--all-namespaces cannot be combined with --namespace or --force")
-				return CliArgumentError("missing namespace or all-namespaces argument")
+			if err := validateAllNamespaces(config); err != nil {
+				return err
 			}
 			return config.suspend(cmd.Context(), k8sFactory)
 		},
@@ -106,9 +122,11 @@ func NewParser(args []string, k8sFactory func() (K8S, error), setupLogging func(
 		Short: "Wake a kubernetes namespace back up",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			slog.Debug("Parsed cli arguments for the wake subcommand", "config", config)
+			if err := validateNamespaces(config.namespaces); err != nil {
+				return err
+			}
 			if len(config.namespaces) == 0 {
-				cmd.PrintErrln("--namespace (-n) must be specified")
-				return CliArgumentError("missing namespace argument")
+				return CliArgumentError("Missing namespace argument.\n--namespace (-n) must be specified.")
 			}
 			return config.wake(cmd.Context(), k8sFactory)
 		},
@@ -119,14 +137,10 @@ func NewParser(args []string, k8sFactory func() (K8S, error), setupLogging func(
 		Short: "Display the suspend status of kubernetes namespaces",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			slog.Debug("Parsed cli arguments for the status subcommand", "config", config)
-			if !config.allNamespaces && len(config.namespaces) == 0 {
-				cmd.PrintErrln("either --all-namespaces or --namespace (-n) must be specified")
-				return CliArgumentError("missing namespace or all-namespaces argument")
-			}
-			if err := config.status(cmd.Context(), k8sFactory); err != nil {
+			if err := validateAllNamespaces(config); err != nil {
 				return err
 			}
-			return nil
+			return config.status(cmd.Context(), k8sFactory)
 		},
 	}
 	statusCmd.Flags().BoolVar(
