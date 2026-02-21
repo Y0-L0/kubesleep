@@ -2,6 +2,7 @@ package k8s
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 
 	kubesleep "github.com/Y0-L0/kubesleep/kubesleep"
@@ -15,7 +16,7 @@ func (k8s K8Simpl) GetSuspendableNamespace(ctx context.Context, namespace string
 		return nil, err
 	}
 
-	return buildSuspendableNamespace(*kubernetesNamespace), err
+	return buildSuspendableNamespace(*kubernetesNamespace)
 }
 
 func (k8s K8Simpl) GetSuspendableNamespaces(ctx context.Context) ([]kubesleep.SuspendableNamespace, error) {
@@ -26,12 +27,22 @@ func (k8s K8Simpl) GetSuspendableNamespaces(ctx context.Context) ([]kubesleep.Su
 	}
 
 	for _, ns := range namespaces.Items {
-		result = append(result, buildSuspendableNamespace(ns))
+		suspendable, err := buildSuspendableNamespace(ns)
+		var terminating kubesleep.NamespaceTerminatingError
+		if errors.As(err, &terminating) {
+			slog.Info("Skipping terminating namespace", "namespace", ns.Name)
+			continue
+		}
+		result = append(result, suspendable)
 	}
 	return result, nil
 }
 
-func buildSuspendableNamespace(kubernetesNamespace corev1.Namespace) kubesleep.SuspendableNamespace {
+func buildSuspendableNamespace(kubernetesNamespace corev1.Namespace) (kubesleep.SuspendableNamespace, error) {
+	if kubernetesNamespace.Status.Phase == corev1.NamespaceTerminating {
+		return nil, kubesleep.NamespaceTerminatingError(kubernetesNamespace.Name)
+	}
+
 	protected := false
 	if kubernetesNamespace.ObjectMeta.Annotations != nil {
 		_, protected = kubernetesNamespace.ObjectMeta.Annotations["kubesleep.xyz/do-not-suspend"]
@@ -45,6 +56,5 @@ func buildSuspendableNamespace(kubernetesNamespace corev1.Namespace) kubesleep.S
 		protected,
 	)
 	slog.Debug("parsed namespace", "namespace", namespaceObj)
-	return namespaceObj
-
+	return namespaceObj, nil
 }

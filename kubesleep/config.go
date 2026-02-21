@@ -2,6 +2,7 @@ package kubesleep
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -44,6 +45,11 @@ func (c cliConfig) getNamespaces(ctx context.Context, k8s K8S) ([]SuspendableNam
 	var namespaces []SuspendableNamespace
 	for _, n := range c.namespaces {
 		ns, err := k8s.GetSuspendableNamespace(ctx, n)
+		var terminating NamespaceTerminatingError
+		if errors.As(err, &terminating) {
+			slog.Info("Skipping terminating namespace", "namespace", n)
+			continue
+		}
 		if err != nil {
 			return nil, err
 		}

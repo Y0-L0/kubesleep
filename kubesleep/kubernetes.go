@@ -23,3 +23,7 @@ func (e StatefileAlreadyExistsError) Error() string { return string(e) }
 type StatefileNotFoundError string
 
 func (e StatefileNotFoundError) Error() string { return string(e) }
+
+type NamespaceTerminatingError string
+
+func (e NamespaceTerminatingError) Error() string { return string(e) }
