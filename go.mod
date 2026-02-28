@@ -1,6 +1,6 @@
 module github.com/Y0-L0/kubesleep
 
-go 1.25
+go 1.26.0
 
 require (
 	github.com/spf13/cobra v1.9.1
