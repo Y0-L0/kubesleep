@@ -1,0 +1,38 @@
+name: test
+
+on:
+  push:
+    branches:
+      - "**"
+    tags-ignore:
+      - "**"
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.0"
+
+      - name: Check formatting
+        run: test -z "$(gofmt -l .)"
+
+      - name: Verify go.mod is tidy
+        run: go mod tidy && git diff --exit-code go.mod go.sum
+
+      - name: Install envtest binaries
+        run: |
+          go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
+          setup-envtest use
+
+      - name: Run tests
+        run: KUBEBUILDER_ASSETS=$(setup-envtest use -p path) go test ./...
