@@ -1,23 +1,8 @@
-# This is an example .goreleaser.yml file with some sensible defaults.
-# Make sure to check the documentation at https://goreleaser.com
-
-# The lines below are called `modelines`. See `:help modeline`
-# Feel free to remove those if you don't want/need to use them.
-# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
-# vim: set ts=2 sw=2 tw=0 fo=cnqoj
-
 version: 2
 
-before:
-  hooks:
-    # You may remove this if you don't use go modules.
-    - go mod tidy
-    # you may remove this if you don't need go generate
-    # - go generate ./...
-
 builds:
-  - id: "kubesleep"
-    main: "./cmd/kubesleep/"
+  - id: kubesleep
+    main: ./cmd/kubesleep/
     env:
       - CGO_ENABLED=0
     goos:
@@ -32,48 +17,66 @@ builds:
       - -X github.com/Y0-L0/kubesleep/kubesleep/version.BuildDate={{ .Date }}
       - -X github.com/Y0-L0/kubesleep/kubesleep/version.TreeState={{ if .IsGitDirty }}dirty{{ else }}clean{{ end }}
 
+nfpms:
+  - id: linux-packages
+    package_name: kubesleep
+    ids:
+      - kubesleep
+    vendor: stadimeter
+    homepage: https://github.com/Y0-L0/kubesleep
+    maintainer: "y0-l0 <jojo.dev@lohmer.com>"
+    description: Suspend and wake Kubernetes workloads on a schedule
+    license: AGPL-3.0
+    formats:
+      - deb
+    bindir: /usr/bin
 
 archives:
   - formats: [tar.gz]
-    # this name template makes the OS and Arch compatible with the results of `uname`.
-    name_template: >-
-      {{ .ProjectName }}_
-      {{- title .Os }}_
-      {{- if eq .Arch "amd64" }}x86_64
-      {{- else if eq .Arch "386" }}i386
-      {{- else }}{{ .Arch }}{{ end }}
-      {{- if .Arm }}v{{ .Arm }}{{ end }}
-    # use zip for windows archives
-    format_overrides:
-      - goos: windows
-        formats: [zip]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  version_template: "{{ .Tag }}-next"
+
+dockers_v2:
+  - images:
+      - ghcr.io/y0-l0/kubesleep
+    dockerfile: Dockerfile.distroless
+    tags:
+      - "{{ .Version }}"
+      - latest
+    labels:
+      org.opencontainers.image.title: "{{ .ProjectName }}"
+      org.opencontainers.image.version: "{{ .Version }}"
+      org.opencontainers.image.revision: "{{ .ShortCommit }}"
+      org.opencontainers.image.created: "{{ .Date }}"
+
+homebrew_casks:
+  - repository:
+      owner: y0-l0
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    directory: Casks
+    homepage: https://github.com/Y0-L0/kubesleep
+    description: Suspend and wake Kubernetes workloads on a schedule
+    license: AGPL-3.0
+
+publishers:
+  - name: fury
+    ids:
+      - linux-packages
+    checksum: false
+    signature: false
+    dir: "{{ dir .ArtifactPath }}"
+    cmd: "curl -v -F package=@{{ .ArtifactName }} https://{{ .Env.FURY_TOKEN }}@push.fury.io/{{ .Env.FURY_ACCOUNT }}/"
 
 changelog:
   sort: asc
   filters:
     exclude:
-      - "^ci:"
-      - "^chore:"
-      - "^docs:"
-      - "^test:"
-
-dockers:
-  - id: kubesleep-amd64
-    ids:
-      - kubesleep
-    dockerfile: Dockerfile.distroless
-    use: buildx
-    goos: linux
-    goarch: amd64
-    skip_push: false
-    image_templates:
-      - ghcr.io/y0-l0/kubesleep:{{ .Version }}
-      - ghcr.io/y0-l0/kubesleep:latest
-    build_flag_templates:
-      - --platform=linux/amd64
-      - --label=org.opencontainers.image.title={{ .ProjectName }}
-      - --label=org.opencontainers.image.version={{ .Version }}
-      - --label=org.opencontainers.image.revision={{ .ShortCommit }}
-      - --label=org.opencontainers.image.created={{ .Date }}
-
-# profiles removed; a single docker definition is used with env-gated --load
+      - '^test:'
+      - '^chore:'
+      - '^ci:'

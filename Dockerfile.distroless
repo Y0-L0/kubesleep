@@ -1,5 +1,6 @@
 FROM gcr.io/distroless/static:nonroot
 
-COPY kubesleep /kubesleep
+ARG TARGETPLATFORM
+COPY ${TARGETPLATFORM}/kubesleep /kubesleep
 USER nonroot:nonroot
 ENTRYPOINT ["/kubesleep"]
