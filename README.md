@@ -22,7 +22,7 @@ sudo apt update && sudo apt install kubesleep
 
 **Binary (Linux amd64):**
 ```bash
-VERSION=0.5.2
+VERSION=0.5.3
 curl -fsSL "https://github.com/Y0-L0/kubesleep/releases/download/v${VERSION}/kubesleep_${VERSION}_linux_amd64.tar.gz" | tar -xz
 sudo mv kubesleep /usr/local/bin/
 ```
