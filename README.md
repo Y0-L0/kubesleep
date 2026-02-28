@@ -8,22 +8,30 @@ Save your development cluster one pod at a time.
 
 ## 📦 Installation
 
-*kubesleep* is distributed as a static binary.
-
-1. Navigate to the [Latest Release](https://github.com/Y0-L0/kubesleep/releases/latest) page.
-2. Download the archive that matches your operating system and architecture.
-3. Extract the binary and move it somewhere on your `PATH`:
-
+**Homebrew (macOS/Linux):**
 ```bash
-tar -xzvf kubesleep-linux-amd64.tgz
-chmod +x kubesleep
+brew install y0-l0/tap/kubesleep
+```
+
+**APT (Debian/Ubuntu):**
+```bash
+echo "deb [trusted=yes] https://apt.fury.io/stadimeter/ /" \
+  | sudo tee /etc/apt/sources.list.d/fury.list
+sudo apt update && sudo apt install kubesleep
+```
+
+**Binary (Linux amd64):**
+```bash
+VERSION=0.5.2
+curl -fsSL "https://github.com/Y0-L0/kubesleep/releases/download/v${VERSION}/kubesleep_${VERSION}_linux_amd64.tar.gz" | tar -xz
 sudo mv kubesleep /usr/local/bin/
 ```
 
-Build from source:
+Binaries for other platforms and architectures are available on the [latest release page](https://github.com/Y0-L0/kubesleep/releases/latest).
 
+**Build from source:**
 ```bash
-go build -o /usr/local/bin/ ./cmd/...
+go install github.com/Y0-L0/kubesleep/cmd/kubesleep@latest
 ```
 
 > **Prerequisites**
@@ -136,7 +144,7 @@ Running multiple concurrent suspend or wake operations on the same namespace can
 go test ./... -run 'TestUnit'
 
 # Run unit and integration tests
-KUBEBUILDER_ASSETS=~/.local/share/kubebuilder-envtest/k8s/1.33.0-linux-amd64/ \
+KUBEBUILDER_ASSETS=$(setup-envtest use -p path) \
   go test ./... --coverprofile=coverage.out -run '' && \
   go tool cover -html=coverage.out -o coverage.html
 
