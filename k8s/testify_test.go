@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	kubesleep "github.com/Y0-L0/kubesleep/kubesleep"
+	kruiseclientset "github.com/openkruise/kruise-api/client/clientset/versioned"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -69,7 +70,18 @@ func testCluster() (*K8Simpl, *rest.Config, func() error, error) {
 		return nil, nil, nil, fmt.Errorf("failed to start test cluster %w", err)
 	}
 
-	k8s.clientset, err = kubernetes.NewForConfig(cfg)
+	k8sClientset, err := kubernetes.NewForConfig(cfg)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("failed to create client config for the test cluster %w", err)
+	}
+	kruiseClientset, err := kruiseclientset.NewForConfig(cfg)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("failed to create client config for the test cluster %w", err)
+	}
+	k8s.clientset = &MixedClientset{
+		Clientset: k8sClientset,
+		kruise:    kruiseClientset,
+	}
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("failed to create client config for the test cluster %w", err)
 	}
