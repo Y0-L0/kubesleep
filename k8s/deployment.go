@@ -3,17 +3,35 @@ package k8s
 import (
 	"context"
 	"log/slog"
+	"slices"
 
 	kubesleep "github.com/Y0-L0/kubesleep/kubesleep"
+	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (k8s K8Simpl) getDeployments(ctx context.Context, namespace string) (map[string]kubesleep.Suspendable, error) {
-	deployments, err := k8s.clientset.AppsV1().
-		Deployments(namespace).
-		List(ctx, metav1.ListOptions{})
-	if err != nil {
-		return nil, err
+func (k8s K8Simpl) getDeployments(ctx context.Context, namespace string, labelSelectors []string) (map[string]kubesleep.Suspendable, error) {
+	deployments := &appsv1.DeploymentList{}
+	var err error
+	if labelSelectors != nil && len(labelSelectors) > 0 {
+		for _, selector := range labelSelectors {
+			curDeployments, err := k8s.clientset.AppsV1().
+				Deployments(namespace).
+				List(ctx, metav1.ListOptions{
+					LabelSelector: selector,
+				})
+			if err != nil {
+				return nil, err
+			}
+			deployments.Items = slices.Concat(deployments.Items, curDeployments.Items)
+		}
+	} else {
+		deployments, err = k8s.clientset.AppsV1().
+			Deployments(namespace).
+			List(ctx, metav1.ListOptions{})
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	suspendables := map[string]kubesleep.Suspendable{}

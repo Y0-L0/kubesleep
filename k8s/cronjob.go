@@ -3,17 +3,35 @@ package k8s
 import (
 	"context"
 	"log/slog"
+	"slices"
 
 	kubesleep "github.com/Y0-L0/kubesleep/kubesleep"
+	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (k8s K8Simpl) getCronJobs(ctx context.Context, namespace string) (map[string]kubesleep.Suspendable, error) {
-	cronJobs, err := k8s.clientset.BatchV1().
-		CronJobs(namespace).
-		List(ctx, metav1.ListOptions{})
-	if err != nil {
-		return nil, err
+func (k8s K8Simpl) getCronJobs(ctx context.Context, namespace string, labelSelectors []string) (map[string]kubesleep.Suspendable, error) {
+	var err error
+	cronJobs := &batchv1.CronJobList{}
+	if labelSelectors != nil && len(labelSelectors) > 0 {
+		for _, selector := range labelSelectors {
+			curCronJobs, err := k8s.clientset.BatchV1().
+				CronJobs(namespace).
+				List(ctx, metav1.ListOptions{
+					LabelSelector: selector,
+				})
+			if err != nil {
+				return nil, err
+			}
+			cronJobs.Items = slices.Concat(cronJobs.Items, curCronJobs.Items)
+		}
+	} else {
+		cronJobs, err = k8s.clientset.BatchV1().
+			CronJobs(namespace).
+			List(ctx, metav1.ListOptions{})
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	suspendables := map[string]kubesleep.Suspendable{}
