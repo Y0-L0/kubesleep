@@ -122,7 +122,7 @@ func TestIntegration(t *testing.T) {
 // getSuspendable fetches all suspendables from the given namespace,
 // asserts the call succeeds and the key exists, and returns the item.
 func (s *Integrationtest) getSuspendable(namespace, key string) kubesleep.Suspendable {
-	m, err := s.k8s.GetSuspendables(s.ctx, namespace)
+	m, err := s.k8s.GetSuspendables(s.ctx, namespace, "")
 	s.Require().NoError(err)
 	sus, ok := m[key]
 	s.Require().True(ok, "suspendable with key %q not found in namespace %q", key, namespace)

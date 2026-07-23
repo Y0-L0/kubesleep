@@ -22,29 +22,29 @@ func mergeNoOverwrite[K comparable, V any](maps ...map[K]V) map[K]V {
 	return result
 }
 
-func (k8s K8Simpl) GetSuspendables(ctx context.Context, namespace string) (map[string]kubesleep.Suspendable, error) {
+func (k8s K8Simpl) GetSuspendables(ctx context.Context, namespace string, labelSelectors []string) (map[string]kubesleep.Suspendable, error) {
 	g, ctxGroup := errgroup.WithContext(ctx)
 
 	var deployments, statefulSets, kruiseStatefulSets, cronJobs map[string]kubesleep.Suspendable
 
 	g.Go(func() error {
 		var err error
-		deployments, err = k8s.getDeployments(ctxGroup, namespace)
+		deployments, err = k8s.getDeployments(ctxGroup, namespace, labelSelectors)
 		return err
 	})
 	g.Go(func() error {
 		var err error
-		statefulSets, err = k8s.getStatefulSets(ctxGroup, namespace)
+		statefulSets, err = k8s.getStatefulSets(ctxGroup, namespace, labelSelectors)
 		return err
 	})
 	g.Go(func() error {
 		var err error
-		cronJobs, err = k8s.getCronJobs(ctxGroup, namespace)
+		cronJobs, err = k8s.getCronJobs(ctxGroup, namespace, labelSelectors)
 		return err
 	})
 	g.Go(func() error {
 		var err error
-		kruiseStatefulSets, err = k8s.getKruiseStatefulSets(ctxGroup, namespace)
+		kruiseStatefulSets, err = k8s.getKruiseStatefulSets(ctxGroup, namespace, labelSelectors)
 		return err
 	})
 	if err := g.Wait(); err != nil {
