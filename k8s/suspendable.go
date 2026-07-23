@@ -25,7 +25,7 @@ func mergeNoOverwrite[K comparable, V any](maps ...map[K]V) map[K]V {
 func (k8s K8Simpl) GetSuspendables(ctx context.Context, namespace string) (map[string]kubesleep.Suspendable, error) {
 	g, ctxGroup := errgroup.WithContext(ctx)
 
-	var deployments, statefulSets, cronJobs map[string]kubesleep.Suspendable
+	var deployments, statefulSets, kruiseStatefulSets, cronJobs map[string]kubesleep.Suspendable
 
 	g.Go(func() error {
 		var err error
@@ -34,7 +34,12 @@ func (k8s K8Simpl) GetSuspendables(ctx context.Context, namespace string) (map[s
 	})
 	g.Go(func() error {
 		var err error
-		statefulSets, err = k8s.getStatefulSets(ctxGroup, namespace)
+		statefulSets, err = k8s.getKruiseStatefulSets(ctxGroup, namespace)
+		return err
+	})
+	g.Go(func() error {
+		var err error
+		kruiseStatefulSets, err = k8s.getStatefulSets(ctxGroup, namespace)
 		return err
 	})
 	g.Go(func() error {
@@ -46,7 +51,7 @@ func (k8s K8Simpl) GetSuspendables(ctx context.Context, namespace string) (map[s
 		return nil, err
 	}
 
-	return mergeNoOverwrite(deployments, statefulSets, cronJobs), nil
+	return mergeNoOverwrite(deployments, statefulSets, kruiseStatefulSets, cronJobs), nil
 }
 
 func (k8s K8Simpl) ScaleSuspendable(ctx context.Context, namespace string, manifestType kubesleep.ManifestType, name string, replicas int32) error {
@@ -56,6 +61,8 @@ func (k8s K8Simpl) ScaleSuspendable(ctx context.Context, namespace string, manif
 		return k8s.scaleDeployment(ctx, namespace, name, replicas)
 	case kubesleep.StatefulSet:
 		return k8s.scaleStatefulSet(ctx, namespace, name, replicas)
+	case kubesleep.KruiseStatefulSet:
+		return k8s.scaleKruiseStatefulSet(ctx, namespace, name, replicas)
 	case kubesleep.CronJob:
 		return k8s.scaleCronJob(ctx, namespace, name, replicas)
 	default:

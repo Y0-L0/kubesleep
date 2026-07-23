@@ -10,6 +10,7 @@ type ManifestType int
 const (
 	Deplyoment ManifestType = iota
 	StatefulSet
+	KruiseStatefulSet
 	CronJob
 )
 
