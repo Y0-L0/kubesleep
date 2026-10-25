@@ -11,6 +11,7 @@ const (
 	Deplyoment ManifestType = iota
 	StatefulSet
 	CronJob
+	KruiseStatefulSet
 )
 
 type Suspendable struct {

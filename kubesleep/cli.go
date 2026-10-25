@@ -116,6 +116,13 @@ func NewParser(args []string, k8sFactory func() (K8S, error), setupLogging func(
 		false,
 		"Suspend all unprotected namespaces",
 	)
+	suspendCmd.Flags().StringArrayVarP(
+		&config.labelSelectors,
+		"label-selector",
+		"l",
+		nil,
+		"Kubernetes label selector. Can be specified multiple times",
+	)
 
 	wakeCmd := &cobra.Command{
 		Use:   "wake",

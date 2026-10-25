@@ -70,7 +70,7 @@ func (s *Integrationtest) TestGetStatefulSet() {
 	s.Require().NoError(err)
 	defer delete()
 
-	suspendables, err := s.k8s.GetSuspendables(s.ctx, "get-statefulsets")
+	suspendables, err := s.k8s.GetSuspendables(s.ctx, "get-statefulsets", "")
 	s.Require().NoError(err)
 
 	s.Require().Equal([]string{"1:test-statefulset"}, slices.Collect(maps.Keys(suspendables)))

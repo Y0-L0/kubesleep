@@ -6,7 +6,7 @@ type K8S interface {
 	GetSuspendableNamespace(ctx context.Context, namespace string) (SuspendableNamespace, error)
 	GetSuspendableNamespaces(ctx context.Context) ([]SuspendableNamespace, error)
 
-	GetSuspendables(ctx context.Context, namespace string) (map[string]Suspendable, error)
+	GetSuspendables(ctx context.Context, namespace string, labelSelectors []string) (map[string]Suspendable, error)
 	ScaleSuspendable(ctx context.Context, namespace string, manifestType ManifestType, name string, replicas int32) error
 
 	GetStateFile(ctx context.Context, namespace string) (*SuspendState, SuspendStateActions, error)

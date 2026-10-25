@@ -3,17 +3,35 @@ package k8s
 import (
 	"context"
 	"log/slog"
+	"slices"
 
 	kubesleep "github.com/Y0-L0/kubesleep/kubesleep"
+	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (k8s K8Simpl) getStatefulSets(ctx context.Context, namespace string) (map[string]kubesleep.Suspendable, error) {
-	statefulSets, err := k8s.clientset.AppsV1().
-		StatefulSets(namespace).
-		List(ctx, metav1.ListOptions{})
-	if err != nil {
-		return nil, err
+func (k8s K8Simpl) getStatefulSets(ctx context.Context, namespace string, labelSelectors []string) (map[string]kubesleep.Suspendable, error) {
+	statefulSets := &appsv1.StatefulSetList{}
+	var err error
+	if labelSelectors != nil && len(labelSelectors) > 0 {
+		for _, selector := range labelSelectors {
+			curStatefulSets, err := k8s.clientset.AppsV1().
+				StatefulSets(namespace).
+				List(ctx, metav1.ListOptions{
+					LabelSelector: selector,
+				})
+			if err != nil {
+				return nil, err
+			}
+			statefulSets.Items = slices.Concat(statefulSets.Items, curStatefulSets.Items)
+		}
+	} else {
+		statefulSets, err = k8s.clientset.AppsV1().
+			StatefulSets(namespace).
+			List(ctx, metav1.ListOptions{})
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	suspendables := map[string]kubesleep.Suspendable{}
