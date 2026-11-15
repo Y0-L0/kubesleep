@@ -23,8 +23,6 @@ mise use \
   github:Y0-L0/kubesleep@latest
 ```
 
-The [GitHub backend](https://mise.jdx.dev/dev-tools/backends/github.html)
-downloads the release binary for your OS and architecture.
 Omit `--global` to add kubesleep to the current project's `mise.toml`.
 
 **APT (Debian/Ubuntu):**
