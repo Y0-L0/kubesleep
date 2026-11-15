@@ -13,6 +13,20 @@ Save your development cluster one pod at a time.
 brew install y0-l0/tap/kubesleep
 ```
 
+**mise (macOS/Linux):**
+
+With [mise](https://mise.jdx.dev/getting-started.html) installed and activated:
+
+```bash
+mise use \
+  --global \
+  github:Y0-L0/kubesleep@latest
+```
+
+The [GitHub backend](https://mise.jdx.dev/dev-tools/backends/github.html)
+downloads the release binary for your OS and architecture.
+Omit `--global` to add kubesleep to the current project's `mise.toml`.
+
 **APT (Debian/Ubuntu):**
 ```bash
 echo "deb [trusted=yes] https://apt.fury.io/stadimeter/ /" \
