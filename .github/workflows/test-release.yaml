@@ -1,10 +1,6 @@
 name: test-release
 
 on:
-  # Remove this temporary trigger before merging the workflow.
-  push:
-    branches: [jlohmer/test-release]
-    paths: [.github/workflows/test-release.yaml]
   release:
     types: [published]
   workflow_dispatch:
@@ -32,7 +28,7 @@ jobs:
     steps:
       - name: Derive version
         run: |
-          VERSION="${{ inputs.version || github.event.release.tag_name || 'v0.5.3' }}"
+          VERSION="${{ inputs.version || github.event.release.tag_name }}"
           echo "VERSION=${VERSION#v}" >> "$GITHUB_ENV"
 
       - name: Install via APT
@@ -55,7 +51,7 @@ jobs:
     steps:
       - name: Derive version
         run: |
-          VERSION="${{ inputs.version || github.event.release.tag_name || 'v0.5.3' }}"
+          VERSION="${{ inputs.version || github.event.release.tag_name }}"
           echo "VERSION=${VERSION#v}" >> "$GITHUB_ENV"
 
       - name: Pull image
@@ -70,7 +66,7 @@ jobs:
     steps:
       - name: Derive version
         run: |
-          VERSION="${{ inputs.version || github.event.release.tag_name || 'v0.5.3' }}"
+          VERSION="${{ inputs.version || github.event.release.tag_name }}"
           echo "VERSION=${VERSION#v}" >> "$GITHUB_ENV"
 
       - name: Download and extract binary
