@@ -31,6 +31,16 @@ func Main(
 		}
 	}()
 
+	return runCommand(args, k8sFactory, outWriter, errWriter, &updateMsg)
+}
+
+func runCommand(
+	args []string,
+	k8sFactory func() (K8S, error),
+	outWriter io.Writer,
+	errWriter io.Writer,
+	updateMsg *atomic.Value,
+) int {
 	command, _ := NewParser(args, k8sFactory, SetupLogging)
 	command.SetOut(outWriter)
 	command.SetErr(errWriter)

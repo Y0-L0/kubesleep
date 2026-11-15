@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"log/slog"
 	"net/http"
+	"sync/atomic"
 	"time"
 
 	"github.com/stretchr/testify/mock"
@@ -80,27 +81,21 @@ func (s *Unittest) TestMain_UpdateCheck_NonBlocking() {
 	close(release)
 }
 
-func (s *Unittest) TestMain_PrintsUpdateWhenReady() {
+func (s *Unittest) TestRunCommand_PrintsUpdateWhenReady() {
 	k8s, factory := NewMockK8S()
-	updateDone := make(chan struct{})
-	mockVersionUpdateCheck := func(_ *http.Client) (string, error) {
-		close(updateDone)
-		return "update!", nil
-	}
-
-	// Hold command execution until the update goroutine signaled readiness
 	k8s.On("GetSuspendableNamespace", mock.Anything, mock.Anything).
-		Run(func(_ mock.Arguments) { <-updateDone }).
 		Return(&suspendableNamespaceImpl{}, errExpected)
 
+	var updateMsg atomic.Value
+	updateMsg.Store("update!")
+
 	var outWriter, errWriter bytes.Buffer
-	code := Main(
+	code := runCommand(
 		[]string{"kubesleep", "suspend", "-n", "blub"},
-		slog.LevelInfo,
 		factory,
-		mockVersionUpdateCheck,
 		&outWriter,
 		&errWriter,
+		&updateMsg,
 	)
 
 	s.Require().Equal(1, code)
