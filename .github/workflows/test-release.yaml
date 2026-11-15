@@ -1,0 +1,80 @@
+name: test-release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag to test (e.g. v0.5.4)"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  homebrew:
+    runs-on: macos-latest
+    steps:
+      # The tap may lag the release event, so this only checks that the cask installs and runs.
+      - name: Install via Homebrew
+        run: brew install y0-l0/tap/kubesleep
+
+      - name: Verify version
+        run: kubesleep version
+
+  apt:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Derive version
+        run: |
+          VERSION="${{ inputs.version || github.event.release.tag_name }}"
+          echo "VERSION=${VERSION#v}" >> "$GITHUB_ENV"
+
+      - name: Install via APT
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ca-certificates >/dev/null 2>&1
+          echo 'deb [trusted=yes] https://apt.fury.io/stadimeter/ /' | sudo tee /etc/apt/sources.list.d/fury.list
+          sudo apt-get update -qq
+          sudo apt-get install -y "kubesleep=${VERSION}"
+
+      - name: Verify version
+        run: |
+          kubesleep version | grep -Fx "Version:    v${VERSION}"
+
+  container:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Derive version
+        run: |
+          VERSION="${{ inputs.version || github.event.release.tag_name }}"
+          echo "VERSION=${VERSION#v}" >> "$GITHUB_ENV"
+
+      - name: Pull image
+        run: docker pull "ghcr.io/y0-l0/kubesleep:${VERSION}"
+
+      - name: Verify version
+        run: |
+          docker run --rm "ghcr.io/y0-l0/kubesleep:${VERSION}" version | grep -Fx "Version:    v${VERSION}"
+
+  binary:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - name: Derive version
+        run: |
+          VERSION="${{ inputs.version || github.event.release.tag_name }}"
+          echo "VERSION=${VERSION#v}" >> "$GITHUB_ENV"
+
+      - name: Download and extract binary
+        run: >-
+          curl -fsSL
+          "https://github.com/${{ github.repository }}/releases/download/v${VERSION}/kubesleep_${VERSION}_linux_arm64.tar.gz"
+          | sudo tar -xz -C /usr/local/bin kubesleep
+
+      - name: Verify version
+        run: |
+          kubesleep version | grep -Fx "Version:    v${VERSION}"
