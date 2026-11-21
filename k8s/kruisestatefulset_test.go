@@ -52,34 +52,34 @@ func CreateKruiseStatefulSet(ctx context.Context, k8s K8Simpl, namespace string,
 }
 
 func (s *Integrationtest) TestKruiseCreateDeleteStatefulSet() {
-	deleteNamespace, err := testNamespace(s.ctx, "create-delete-statefulset", s.k8s, false)
+	deleteNamespace, err := testNamespace(s.ctx, "kruise-create-delete-statefulset", s.k8s, false)
 	s.Require().NoError(err)
 	defer deleteNamespace()
 
-	delete, err := CreateStatefulSet(s.ctx, *s.k8s, "create-delete-statefulset", "test-statefulset", int32(2))
+	delete, err := CreateKruiseStatefulSet(s.ctx, *s.k8s, "kruise-create-delete-statefulset", "test-statefulset", int32(2))
 	s.Require().NoError(err)
 	defer delete()
 }
 
 func (s *Integrationtest) TestKruiseGetStatefulSet() {
-	deleteNamespace, err := testNamespace(s.ctx, "get-statefulsets", s.k8s, false)
+	deleteNamespace, err := testNamespace(s.ctx, "kruise-get-statefulsets", s.k8s, false)
 	s.Require().NoError(err)
 	defer deleteNamespace()
 
-	delete, err := CreateStatefulSet(s.ctx, *s.k8s, "get-statefulsets", "test-statefulset", int32(2))
+	delete, err := CreateKruiseStatefulSet(s.ctx, *s.k8s, "kruise-get-statefulsets", "test-statefulset", int32(2))
 	s.Require().NoError(err)
 	defer delete()
 
-	suspendables, err := s.k8s.GetSuspendables(s.ctx, "get-statefulsets")
+	suspendables, err := s.k8s.GetSuspendables(s.ctx, "kruise-get-statefulsets")
 	s.Require().NoError(err)
 
-	s.Require().Equal([]string{"1:test-statefulset"}, slices.Collect(maps.Keys(suspendables)))
+	s.Require().Equal([]string{"3:test-statefulset"}, slices.Collect(maps.Keys(suspendables)))
 
-	actual := s.getSuspendable("get-statefulsets", "1:test-statefulset")
+	actual := s.getSuspendable("kruise-get-statefulsets", "3:test-statefulset")
 	actual.Suspend = nil
 	s.Require().Equal(
 		kubesleep.NewSuspendable(
-			kubesleep.StatefulSet,
+			kubesleep.KruiseStatefulSet,
 			"test-statefulset",
 			int32(2),
 			nil,
@@ -89,56 +89,57 @@ func (s *Integrationtest) TestKruiseGetStatefulSet() {
 }
 
 func (s *Integrationtest) TestKruiseSuspendStatefulSet() {
-	deleteNamespace, err := testNamespace(s.ctx, "suspend-statefulsets-via-suspendable", s.k8s, false)
+	deleteNamespace, err := testNamespace(s.ctx, "kruise-suspend-statefulsets-via-suspendable", s.k8s, false)
 	s.Require().NoError(err)
 	defer deleteNamespace()
 
-	delete, err := CreateStatefulSet(s.ctx, *s.k8s, "suspend-statefulsets-via-suspendable", "test-statefulset", int32(2))
+	delete, err := CreateKruiseStatefulSet(s.ctx, *s.k8s, "kruise-suspend-statefulsets-via-suspendable", "test-statefulset", int32(2))
 	s.Require().NoError(err)
 	defer delete()
 
-	before := s.getSuspendable("suspend-statefulsets-via-suspendable", "1:test-statefulset")
+	before := s.getSuspendable("kruise-suspend-statefulsets-via-suspendable", "3:test-statefulset")
 	s.Require().Equal(int32(2), before.Replicas)
 
 	s.Require().NoError(before.Suspend(s.ctx))
 
-	actual := s.getSuspendable("suspend-statefulsets-via-suspendable", "1:test-statefulset")
+	actual := s.getSuspendable("kruise-suspend-statefulsets-via-suspendable", "3:test-statefulset")
 	s.Require().Equal(int32(0), actual.Replicas)
 }
 
 func (s *Integrationtest) TestKruiseAlreadySuspendedStatefulSet() {
-	deleteNamespace, err := testNamespace(s.ctx, "skip-already-suspended-statefulset", s.k8s, false)
+	deleteNamespace, err := testNamespace(s.ctx, "kruise-skip-already-suspended-statefulset", s.k8s, false)
 	s.Require().NoError(err)
 	defer deleteNamespace()
 
-	delete, err := CreateStatefulSet(s.ctx, *s.k8s, "skip-already-suspended-statefulset", "test-statefulset", int32(0))
+	delete, err := CreateKruiseStatefulSet(s.ctx, *s.k8s, "kruise-skip-already-suspended-statefulset", "test-statefulset", int32(0))
 	s.Require().NoError(err)
 	defer delete()
 
-	beforeScale, err := s.k8s.clientset.kruise.AppsV1beta1().StatefulSets("skip-already-suspended-statefulset").GetScale(s.ctx, "test-statefulset", metav1.GetOptions{})
+	beforeScale, err := s.k8s.clientset.kruise.AppsV1beta1().StatefulSets("kruise-skip-already-suspended-statefulset").GetScale(s.ctx, "test-statefulset", metav1.GetOptions{})
 	s.Require().NoError(err)
 
-	before := s.getSuspendable("skip-already-suspended-statefulset", "1:test-statefulset")
+	before := s.getSuspendable("kruise-skip-already-suspended-statefulset", "3:test-statefulset")
 	s.Require().Equal(int32(0), before.Replicas)
 
 	s.Require().NoError(before.Suspend(s.ctx))
 
-	afterScale, err := s.k8s.clientset.kruise.AppsV1beta1().StatefulSets("skip-already-suspended-statefulset").GetScale(s.ctx, "test-statefulset", metav1.GetOptions{})
+	afterScale, err := s.k8s.clientset.kruise.AppsV1beta1().StatefulSets("kruise-skip-already-suspended-statefulset").GetScale(s.ctx, "test-statefulset", metav1.GetOptions{})
 	s.Require().NoError(err)
 	s.Require().Equal(beforeScale.ResourceVersion, afterScale.ResourceVersion)
 }
 
 func (s *Integrationtest) TestKruiseScaleStatefulSet() {
-	deleteNamespace, err := testNamespace(s.ctx, "scale-statefulsets", s.k8s, false)
+	deleteNamespace, err := testNamespace(s.ctx, "kruise-scale-statefulsets", s.k8s, false)
 	s.Require().NoError(err)
 	defer deleteNamespace()
 
-	delete, err := CreateStatefulSet(s.ctx, *s.k8s, "scale-statefulsets", "test-statefulset", int32(0))
+	delete, err := CreateKruiseStatefulSet(s.ctx, *s.k8s, "kruise-scale-statefulsets", "test-statefulset", int32(0))
 	s.Require().NoError(err)
 	defer delete()
 
-	err = s.k8s.ScaleSuspendable(s.ctx, "scale-statefulsets", kubesleep.StatefulSet, "test-statefulset", int32(2))
+	err = s.k8s.ScaleSuspendable(s.ctx, "kruise-scale-statefulsets", kubesleep.KruiseStatefulSet, "test-statefulset", int32(2))
+	s.Require().NoError(err)
 
-	actual := s.getSuspendable("scale-statefulsets", "1:test-statefulset")
+	actual := s.getSuspendable("kruise-scale-statefulsets", "3:test-statefulset")
 	s.Require().Equal(int32(2), actual.Replicas)
 }
