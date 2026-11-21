@@ -3,7 +3,6 @@ package k8s
 import (
 	"context"
 	"log/slog"
-	"slices"
 
 	kubesleep "github.com/Y0-L0/kubesleep/kubesleep"
 	appsv1 "k8s.io/api/apps/v1"
@@ -11,32 +10,20 @@ import (
 )
 
 func (k8s K8Simpl) getDeployments(ctx context.Context, namespace string, labelSelectors []string) (map[string]kubesleep.Suspendable, error) {
-	deployments := &appsv1.DeploymentList{}
-	var err error
-	if labelSelectors != nil && len(labelSelectors) > 0 {
-		for _, selector := range labelSelectors {
-			curDeployments, err := k8s.clientset.AppsV1().
-				Deployments(namespace).
-				List(ctx, metav1.ListOptions{
-					LabelSelector: selector,
-				})
-			if err != nil {
-				return nil, err
-			}
-			deployments.Items = slices.Concat(deployments.Items, curDeployments.Items)
-		}
-	} else {
-		deployments, err = k8s.clientset.AppsV1().
+	var deployments []appsv1.Deployment
+	for _, selector := range labelSelectors {
+		list, err := k8s.clientset.AppsV1().
 			Deployments(namespace).
-			List(ctx, metav1.ListOptions{})
+			List(ctx, metav1.ListOptions{LabelSelector: selector})
 		if err != nil {
 			return nil, err
 		}
+		deployments = append(deployments, list.Items...)
 	}
 
 	suspendables := map[string]kubesleep.Suspendable{}
 
-	for _, deployment := range deployments.Items {
+	for _, deployment := range deployments {
 		var suspend func(context.Context) error
 		if deployment.Spec.Replicas != nil && *deployment.Spec.Replicas == 0 {
 			suspend = k8s.noopSuspendDeployment(namespace, deployment.Name)

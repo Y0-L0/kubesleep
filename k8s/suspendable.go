@@ -23,6 +23,10 @@ func mergeNoOverwrite[K comparable, V any](maps ...map[K]V) map[K]V {
 }
 
 func (k8s K8Simpl) GetSuspendables(ctx context.Context, namespace string, labelSelectors []string) (map[string]kubesleep.Suspendable, error) {
+	// An empty selector matches every workload.
+	if len(labelSelectors) == 0 {
+		labelSelectors = []string{""}
+	}
 	g, ctxGroup := errgroup.WithContext(ctx)
 
 	var deployments, statefulSets, kruiseStatefulSets, cronJobs map[string]kubesleep.Suspendable
