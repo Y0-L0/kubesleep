@@ -60,6 +60,12 @@ func (s *Unittest) TestValidCliArguments() {
 			&cliConfig{namespaces: []string{"test-ns"}, force: true, allNamespaces: false},
 		},
 		{
+			"suspend with label selectors",
+			[]string{"kubesleep", "suspend", "-n", "test-ns", "-l", "app=web", "--label-selector", "tier in (db,cache)"},
+			"suspend",
+			&cliConfig{namespaces: []string{"test-ns"}, labelSelectors: []string{"app=web", "tier in (db,cache)"}},
+		},
+		{
 			"wake with ns",
 			[]string{"kubesleep", "wake", "-n", "test-ns"},
 			"wake",
@@ -159,6 +165,8 @@ func (s *Unittest) TestInvalidCliArguments() {
 		{"suspend no namespace force", []string{"kubesleep", "suspend", "--force"}, &cliConfig{force: true}},
 		{"suspend all namespaces force", []string{"kubesleep", "suspend", "--all-namespaces", "--force"}, &cliConfig{allNamespaces: true, force: true}},
 		{"suspend all namespaces namespace colision", []string{"kubesleep", "suspend", "--all-namespaces", "--namespace", "foo"}, &cliConfig{allNamespaces: true, namespaces: []string{"foo"}}},
+		{"suspend empty label selector", []string{"kubesleep", "suspend", "-n", "foo", "-l", " "}, &cliConfig{namespaces: []string{"foo"}, labelSelectors: []string{" "}}},
+		{"suspend malformed label selector", []string{"kubesleep", "suspend", "-n", "foo", "-l", "app in (web"}, &cliConfig{namespaces: []string{"foo"}, labelSelectors: []string{"app in (web"}}},
 		{"status no namespace", []string{"kubesleep", "status"}, &cliConfig{}},
 		{"status empty namespace", []string{"kubesleep", "status", "-n", ""}, &cliConfig{namespaces: []string{""}}},
 		{"status all namespaces namespace colision", []string{"kubesleep", "status", "--all-namespaces", "--namespace", "foo"}, &cliConfig{allNamespaces: true, namespaces: []string{"foo"}}},
