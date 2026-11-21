@@ -18,6 +18,7 @@ func CreateKruiseStatefulSet(ctx context.Context, k8s K8Simpl, namespace string,
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
+			Labels:    labels,
 		},
 		Spec: appsv1beta1.StatefulSetSpec{
 			Replicas: &Replicas,

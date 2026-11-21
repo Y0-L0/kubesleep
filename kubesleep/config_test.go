@@ -28,6 +28,17 @@ func (s *Unittest) TestSuspendBrokenK8S() {
 	s.Require().Equal(errExpected, err)
 }
 
+func (s *Unittest) TestSuspendPassesLabelSelectors() {
+	k8s, factory := NewMockK8S()
+	k8s.On("GetSuspendableNamespace", mock.Anything, "foo").Return(NewSuspendableNamespace("foo", false), nil)
+	k8s.On("GetSuspendables", mock.Anything, "foo", []string{"app=web"}).Return(map[string]Suspendable{}, errExpected)
+
+	err := cliConfig{namespaces: []string{"foo"}, labelSelectors: []string{"app=web"}, outWriter: io.Discard}.suspend(context.TODO(), factory)
+
+	k8s.AssertExpectations(s.T())
+	s.Require().Equal(errExpected, err)
+}
+
 func (s *Unittest) TestSuspendSkip() {
 	k8s, factory := NewMockK8S()
 	k8s.On("GetSuspendableNamespace", mock.Anything, "foo").Return(NewSuspendableNamespace("foo", true), nil)
