@@ -64,7 +64,12 @@ func testCluster() (*K8Simpl, *rest.Config, func() error, error) {
 	k8s := &K8Simpl{}
 
 	slog.Debug("Starting a testing kubernetes control plane")
-	testEnv := &envtest.Environment{}
+	// Use the upstream OpenKruise v1.8.0 CRD, including its scale subresource.
+	// https://github.com/openkruise/kruise/blob/v1.8.0/config/crd/bases/apps.kruise.io_statefulsets.yaml
+	testEnv := &envtest.Environment{
+		CRDDirectoryPaths:     []string{"testdata/crds"},
+		ErrorIfCRDPathMissing: true,
+	}
 	cfg, err := testEnv.Start()
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("failed to start test cluster %w", err)
