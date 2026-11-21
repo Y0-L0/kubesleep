@@ -140,7 +140,7 @@ func NewParser(args []string, k8sFactory func() (K8S, error), setupLogging func(
 		"label-selector",
 		"l",
 		nil,
-		"Kubernetes label selector. Can be specified multiple times",
+		"Only suspend workloads that match this label selector. Repeat to match any of several selectors",
 	)
 
 	wakeCmd := &cobra.Command{

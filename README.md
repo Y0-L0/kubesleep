@@ -94,6 +94,21 @@ The operation is mostly idempotent and can be rerun to update the suspend state 
 
 See below for details about the suspend‑state merge behaviour.
 
+#### Label selectors
+
+`--label-selector` (`-l`) limits `suspend` to the workloads whose labels match the selector.
+The selector syntax is the one `kubectl get -l` accepts,
+so a comma inside one selector requires all of its terms.
+Repeat the flag to suspend every workload that matches any of the selectors.
+
+```bash
+kubesleep suspend -n dev -l app=web
+kubesleep suspend -n dev -l app=web -l 'tier in (db,cache)'
+```
+
+`wake` accepts no selector.
+It restores every workload recorded in the suspend state.
+
 #### Protected Namespaces
 
 Certain Kubernetes namespaces are protected from accidental suspension: `default`, `kube-{system,public,node-lease}`, `ingress-nginx`, `istio`, `local-path`.
