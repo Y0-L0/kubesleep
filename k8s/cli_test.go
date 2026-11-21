@@ -48,3 +48,26 @@ func (s *Integrationtest) TestWakeSkipsWorkloadDeletedWhileSuspended() {
 	_, _, err = s.k8s.GetStateFile(s.ctx, namespace)
 	s.Require().ErrorAs(err, new(kubesleep.StatefileNotFoundError))
 }
+
+func (s *Integrationtest) TestSuspendTwiceWithLabelSelectorsThenWake() {
+	namespace := "suspend-twice-with-label-selectors"
+	deleteNamespace, err := testNamespace(s.ctx, namespace, s.k8s, false)
+	s.Require().NoError(err)
+	defer deleteNamespace()
+
+	original := map[string]int32{"foo": 2, "bar": 3, "other": 4}
+	for name, replicas := range original {
+		deleteDeployment, err := CreateDeployment(s.ctx, *s.k8s, namespace, name, replicas)
+		s.Require().NoError(err)
+		defer deleteDeployment()
+	}
+
+	s.runCli("suspend", "-n", namespace, "-l", "app=foo")
+	s.Require().Equal(map[string]int32{"foo": 0, "bar": 3, "other": 4}, s.deploymentReplicas(namespace))
+
+	s.runCli("suspend", "-n", namespace, "-l", "app=bar")
+	s.Require().Equal(map[string]int32{"foo": 0, "bar": 0, "other": 4}, s.deploymentReplicas(namespace))
+
+	s.runCli("wake", "-n", namespace)
+	s.Require().Equal(original, s.deploymentReplicas(namespace))
+}
