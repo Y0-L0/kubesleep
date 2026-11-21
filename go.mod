@@ -3,7 +3,7 @@ module github.com/Y0-L0/kubesleep
 go 1.27.4
 
 require (
-	github.com/openkruise/kruise-api v1.8.0
+	github.com/openkruise/kruise-api v1.9.0
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.12.1
 	golang.org/x/mod v0.43.0
@@ -12,7 +12,7 @@ require (
 	k8s.io/apimachinery v0.37.2
 	k8s.io/client-go v0.37.2
 	k8s.io/utils v0.0.0-20260626114624-be93311217bd
-	sigs.k8s.io/controller-runtime v0.25.2
+	sigs.k8s.io/controller-runtime v0.25.3
 )
 
 require (
