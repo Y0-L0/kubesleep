@@ -56,8 +56,8 @@ func (m *mockK8S) DeleteStateFile(ctx context.Context, ns string) error {
 	return args.Error(0)
 }
 
-func (m *mockK8S) GetSuspendables(ctx context.Context, ns string) (map[string]Suspendable, error) {
-	args := m.Called(ctx, ns)
+func (m *mockK8S) GetSuspendables(ctx context.Context, ns string, labelSelectors []string) (map[string]Suspendable, error) {
+	args := m.Called(ctx, ns, labelSelectors)
 	return args.Get(0).(map[string]Suspendable), args.Error(1)
 }
 
