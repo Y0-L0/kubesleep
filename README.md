@@ -69,6 +69,7 @@ Add `-v` or `-vv` to any command for info/debug logs.
 ### Wake
 
 Wake up one or more previously suspended namespaces by restoring the replica counts recorded during the last successful `suspend` operation.
+`wake` skips workloads that were deleted while the namespace was suspended.
 
 ```bash
 kubesleep wake -n dev
