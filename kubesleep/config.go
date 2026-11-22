@@ -13,10 +13,11 @@ import (
 )
 
 type cliConfig struct {
-	namespaces    []string
-	force         bool
-	allNamespaces bool
-	outWriter     io.Writer
+	namespaces     []string
+	labelSelectors []string
+	force          bool
+	allNamespaces  bool
+	outWriter      io.Writer
 }
 
 func (c cliConfig) validate() {
@@ -83,7 +84,7 @@ func (c cliConfig) suspend(ctx context.Context, k8sFactory func() (K8S, error)) 
 			fmt.Fprintf(c.outWriter, "Skipped protected namespace %s\n", ns.Name())
 			continue
 		}
-		err = ns.suspend(ctx, k8s)
+		err = ns.suspend(ctx, k8s, c.labelSelectors)
 		if err != nil {
 			return err
 		}

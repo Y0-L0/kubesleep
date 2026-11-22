@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"maps"
 )
 
 // Versioned statefile keys stored in the ConfigMap's data
@@ -37,16 +38,14 @@ func NewSuspendState(suspendables map[string]Suspendable, finished bool) Suspend
 
 func (s *SuspendState) merge(other *SuspendState) *SuspendState {
 	result := SuspendState{
-		suspendables: make(map[string]Suspendable, len(other.suspendables)),
+		suspendables: make(map[string]Suspendable, len(s.suspendables)+len(other.suspendables)),
 		finished:     s.finished && other.finished,
 	}
 
-	for k, v := range other.suspendables {
-		if sv, ok := s.suspendables[k]; ok {
-			v = sv
-		}
-		result.suspendables[k] = v
-	}
+	maps.Copy(result.suspendables, other.suspendables)
+	// Existing entries win and stay even when the new listing lacks them:
+	// they hold the counts from before the first suspend, and a label selector may have skipped them.
+	maps.Copy(result.suspendables, s.suspendables)
 	slog.Debug("Merged two statefiles together", "mergedStateFile", result)
 	return &result
 }

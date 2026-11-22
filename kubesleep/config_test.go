@@ -20,9 +20,20 @@ func (s *Unittest) TestSuspendBrokenK8SFactory() {
 func (s *Unittest) TestSuspendBrokenK8S() {
 	k8s, factory := NewMockK8S()
 	k8s.On("GetSuspendableNamespace", mock.Anything, "foo").Return(NewSuspendableNamespace("foo", false), nil)
-	k8s.On("GetSuspendables", mock.Anything, "foo").Return(map[string]Suspendable{}, errExpected)
+	k8s.On("GetSuspendables", mock.Anything, "foo", []string(nil)).Return(map[string]Suspendable{}, errExpected)
 
 	err := cliConfig{namespaces: []string{"foo"}, outWriter: io.Discard}.suspend(context.TODO(), factory)
+
+	k8s.AssertExpectations(s.T())
+	s.Require().Equal(errExpected, err)
+}
+
+func (s *Unittest) TestSuspendPassesLabelSelectors() {
+	k8s, factory := NewMockK8S()
+	k8s.On("GetSuspendableNamespace", mock.Anything, "foo").Return(NewSuspendableNamespace("foo", false), nil)
+	k8s.On("GetSuspendables", mock.Anything, "foo", []string{"app=web"}).Return(map[string]Suspendable{}, errExpected)
+
+	err := cliConfig{namespaces: []string{"foo"}, labelSelectors: []string{"app=web"}, outWriter: io.Discard}.suspend(context.TODO(), factory)
 
 	k8s.AssertExpectations(s.T())
 	s.Require().Equal(errExpected, err)
@@ -42,7 +53,7 @@ func (s *Unittest) TestSuspendEmptyNamespace() {
 	k8s, factory := NewMockK8S()
 	actions := MockStateFileActions{}
 	k8s.On("GetSuspendableNamespace", mock.Anything, "foo").Return(NewSuspendableNamespace("foo", false), nil)
-	k8s.On("GetSuspendables", mock.Anything, "foo").Return(map[string]Suspendable{}, nil)
+	k8s.On("GetSuspendables", mock.Anything, "foo", []string(nil)).Return(map[string]Suspendable{}, nil)
 	k8s.On("CreateStateFile", mock.Anything, "foo", mock.Anything).Return(&actions, nil)
 	actions.On("Update", mock.Anything, mock.Anything).Return(nil)
 

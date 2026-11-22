@@ -18,6 +18,7 @@ func CreateStatefulSet(ctx context.Context, k8s K8Simpl, namespace string, name 
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
+			Labels:    labels,
 		},
 		Spec: appsv1.StatefulSetSpec{
 			Replicas: &Replicas,
@@ -70,7 +71,7 @@ func (s *Integrationtest) TestGetStatefulSet() {
 	s.Require().NoError(err)
 	defer delete()
 
-	suspendables, err := s.k8s.GetSuspendables(s.ctx, "get-statefulsets")
+	suspendables, err := s.k8s.GetSuspendables(s.ctx, "get-statefulsets", nil)
 	s.Require().NoError(err)
 
 	s.Require().Equal([]string{"1:test-statefulset"}, slices.Collect(maps.Keys(suspendables)))

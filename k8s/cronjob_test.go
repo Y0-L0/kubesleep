@@ -13,6 +13,7 @@ func CreateCronJob(ctx context.Context, k8s K8Simpl, namespace string, name stri
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
+			Labels:    map[string]string{"app": name},
 		},
 		Spec: batchv1.CronJobSpec{
 			Schedule: "*/1 * * * *",

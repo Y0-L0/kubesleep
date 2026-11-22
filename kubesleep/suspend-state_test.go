@@ -97,6 +97,7 @@ func (s *Unittest) TestMergeStateFiles() {
 	}
 	expected := &SuspendState{
 		map[string]Suspendable{
+			a.Identifier(): a,
 			b.Identifier(): b,
 			c.Identifier(): c,
 			d.Identifier(): d,

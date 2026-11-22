@@ -18,6 +18,7 @@ func CreateKruiseStatefulSet(ctx context.Context, k8s K8Simpl, namespace string,
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
+			Labels:    labels,
 		},
 		Spec: appsv1beta1.StatefulSetSpec{
 			Replicas: &Replicas,
@@ -70,7 +71,7 @@ func (s *Integrationtest) TestKruiseGetStatefulSet() {
 	s.Require().NoError(err)
 	defer delete()
 
-	suspendables, err := s.k8s.GetSuspendables(s.ctx, "kruise-get-statefulsets")
+	suspendables, err := s.k8s.GetSuspendables(s.ctx, "kruise-get-statefulsets", nil)
 	s.Require().NoError(err)
 
 	s.Require().Equal([]string{"3:test-statefulset"}, slices.Collect(maps.Keys(suspendables)))

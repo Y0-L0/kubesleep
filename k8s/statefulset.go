@@ -5,20 +5,25 @@ import (
 	"log/slog"
 
 	kubesleep "github.com/Y0-L0/kubesleep/kubesleep"
+	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (k8s K8Simpl) getStatefulSets(ctx context.Context, namespace string) (map[string]kubesleep.Suspendable, error) {
-	statefulSets, err := k8s.clientset.AppsV1().
-		StatefulSets(namespace).
-		List(ctx, metav1.ListOptions{})
-	if err != nil {
-		return nil, err
+func (k8s K8Simpl) getStatefulSets(ctx context.Context, namespace string, labelSelectors []string) (map[string]kubesleep.Suspendable, error) {
+	var statefulSets []appsv1.StatefulSet
+	for _, selector := range labelSelectors {
+		list, err := k8s.clientset.AppsV1().
+			StatefulSets(namespace).
+			List(ctx, metav1.ListOptions{LabelSelector: selector})
+		if err != nil {
+			return nil, err
+		}
+		statefulSets = append(statefulSets, list.Items...)
 	}
 
 	suspendables := map[string]kubesleep.Suspendable{}
 
-	for _, statefulSet := range statefulSets.Items {
+	for _, statefulSet := range statefulSets {
 		var suspend func(context.Context) error
 		if statefulSet.Spec.Replicas != nil && *statefulSet.Spec.Replicas == 0 {
 			suspend = k8s.noopSuspendStatefulSet(namespace, statefulSet.Name)

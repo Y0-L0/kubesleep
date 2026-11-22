@@ -16,7 +16,7 @@ type SuspendableNamespace interface {
 	Name() string
 	Protected() bool
 	autoProtected() bool
-	suspend(context.Context, K8S) error
+	suspend(context.Context, K8S, []string) error
 	wake(context.Context, K8S) error
 	status(context.Context, K8S) (string, int32, error)
 }
@@ -36,9 +36,11 @@ func NewSuspendableNamespace(name string, protected bool) SuspendableNamespace {
 func (n *suspendableNamespaceImpl) Protected() bool {
 	return n.protected || n.autoProtected()
 }
+
 func (n *suspendableNamespaceImpl) autoProtected() bool {
 	return slices.Contains(PROTECTED_NAMESPACES, n.name)
 }
+
 func (n *suspendableNamespaceImpl) Name() string {
 	return n.name
 }
@@ -89,8 +91,8 @@ func (n *suspendableNamespaceImpl) ensureStateFile(ctx context.Context, k8s K8S,
 	return existingStateFile.merge(stateFile), actions, nil
 }
 
-func (n *suspendableNamespaceImpl) suspend(ctx context.Context, k8s K8S) error {
-	suspendables, err := k8s.GetSuspendables(ctx, n.name)
+func (n *suspendableNamespaceImpl) suspend(ctx context.Context, k8s K8S, labelSelectors []string) error {
+	suspendables, err := k8s.GetSuspendables(ctx, n.name, labelSelectors)
 	if err != nil {
 		return err
 	}

@@ -15,6 +15,7 @@ func CreateDeployment(ctx context.Context, k8s K8Simpl, namespace string, name s
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
+			Labels:    labels,
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &Replicas,

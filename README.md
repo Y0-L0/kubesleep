@@ -69,6 +69,7 @@ Add `-v` or `-vv` to any command for info/debug logs.
 ### Wake
 
 Wake up one or more previously suspended namespaces by restoring the replica counts recorded during the last successful `suspend` operation.
+`wake` skips workloads that were deleted while the namespace was suspended.
 
 ```bash
 kubesleep wake -n dev
@@ -93,6 +94,23 @@ kubesleep suspend -n dev -n staging
 The operation is mostly idempotent and can be rerun to update the suspend state or to repeat a failed or aborted attempt.
 
 See below for details about the suspend‑state merge behaviour.
+
+#### Label selectors
+
+`--label-selector` (`-l`) limits `suspend` to the workloads whose labels match the selector.
+The selector syntax is the one `kubectl get -l` accepts,
+so a comma inside one selector requires all of its terms.
+Repeat the flag to suspend every workload that matches any of the selectors.
+A later `suspend` with another selector adds its workloads to the suspend state,
+and `wake` restores all of them.
+
+```bash
+kubesleep suspend -n dev -l app=web
+kubesleep suspend -n dev -l app=web -l 'tier in (db,cache)'
+```
+
+`wake` accepts no selector.
+It restores every workload recorded in the suspend state.
 
 #### Protected Namespaces
 
@@ -132,7 +150,7 @@ The `kubesleep suspend` command can be repeated to:
 * Retry a failed suspend operation.
 * Redo a suspend operation after adding or modifying workloads with tools like `kubectl` or `helm`.
 
-New workloads are added to the suspend state. Manual changes to `replicaCount` are **not** incorporated. The `wake` command always restores the initial replica counts, not any intermediate values. After a successful `wake`, the suspend state is reset (the ConfigMap is deleted).
+New workloads are added to the suspend state, and workloads already in it stay until `wake`, even when a later `suspend -l` selects others. Manual changes to `replicaCount` are **not** incorporated. The `wake` command always restores the initial replica counts, not any intermediate values. After a successful `wake`, the suspend state is reset (the ConfigMap is deleted).
 
 **Example**
 

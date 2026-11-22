@@ -5,24 +5,29 @@ import (
 	"log/slog"
 
 	kubesleep "github.com/Y0-L0/kubesleep/kubesleep"
+	appsv1beta1 "github.com/openkruise/kruise-api/apps/v1beta1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (k8s K8Simpl) getKruiseStatefulSets(ctx context.Context, namespace string) (map[string]kubesleep.Suspendable, error) {
+func (k8s K8Simpl) getKruiseStatefulSets(ctx context.Context, namespace string, labelSelectors []string) (map[string]kubesleep.Suspendable, error) {
 	suspendables := map[string]kubesleep.Suspendable{}
-	statefulSets, err := k8s.clientset.kruise.AppsV1beta1().
-		StatefulSets(namespace).
-		List(ctx, metav1.ListOptions{})
-	if err != nil {
-		if apierrors.IsNotFound(err) {
-			slog.Info("Skipping not found OpenKruise StatefulSets.")
-			return suspendables, nil
+	var statefulSets []appsv1beta1.StatefulSet
+	for _, selector := range labelSelectors {
+		list, err := k8s.clientset.kruise.AppsV1beta1().
+			StatefulSets(namespace).
+			List(ctx, metav1.ListOptions{LabelSelector: selector})
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				slog.Info("Skipping not found OpenKruise StatefulSets.")
+				return suspendables, nil
+			}
+			return nil, err
 		}
-		return nil, err
+		statefulSets = append(statefulSets, list.Items...)
 	}
 
-	for _, statefulSet := range statefulSets.Items {
+	for _, statefulSet := range statefulSets {
 		var suspend func(context.Context) error
 		if statefulSet.Spec.Replicas != nil && *statefulSet.Spec.Replicas == 0 {
 			suspend = k8s.noopSuspendKruiseStatefulSet(namespace, statefulSet.Name)

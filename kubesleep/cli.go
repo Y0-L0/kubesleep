@@ -1,12 +1,15 @@
 package kubesleep
 
 import (
+	"fmt"
 	"log/slog"
 	"os"
 	"slices"
+	"strings"
 
 	"github.com/Y0-L0/kubesleep/kubesleep/version"
 	"github.com/spf13/cobra"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
 type CliArgumentError string
@@ -38,6 +41,19 @@ func validateAllNamespaces(config *cliConfig) error {
 func validateNamespaces(namespaces []string) error {
 	if slices.Contains(namespaces, "") {
 		return CliArgumentError("Invalid namespace value")
+	}
+	return nil
+}
+
+func validateLabelSelectors(selectors []string) error {
+	for _, selector := range selectors {
+		// An empty selector matches every workload, which -l is meant to narrow down.
+		if strings.TrimSpace(selector) == "" {
+			return CliArgumentError("Invalid label selector value")
+		}
+		if _, err := labels.Parse(selector); err != nil {
+			return CliArgumentError(fmt.Sprintf("Invalid label selector %q: %v", selector, err))
+		}
 	}
 	return nil
 }
@@ -100,6 +116,9 @@ func NewParser(args []string, k8sFactory func() (K8S, error), setupLogging func(
 			if err := validateAllNamespaces(config); err != nil {
 				return err
 			}
+			if err := validateLabelSelectors(config.labelSelectors); err != nil {
+				return err
+			}
 			return config.suspend(cmd.Context(), k8sFactory)
 		},
 	}
@@ -115,6 +134,13 @@ func NewParser(args []string, k8sFactory func() (K8S, error), setupLogging func(
 		"all-namespaces",
 		false,
 		"Suspend all unprotected namespaces",
+	)
+	suspendCmd.Flags().StringArrayVarP(
+		&config.labelSelectors,
+		"label-selector",
+		"l",
+		nil,
+		"Only suspend workloads that match this label selector. Repeat to match any of several selectors",
 	)
 
 	wakeCmd := &cobra.Command{

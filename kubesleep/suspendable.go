@@ -3,6 +3,9 @@ package kubesleep
 import (
 	"context"
 	"fmt"
+	"log/slog"
+
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 type ManifestType int
@@ -35,7 +38,12 @@ func (s Suspendable) Identifier() string {
 }
 
 func (s Suspendable) wake(ctx context.Context, namespace string, k8s K8S) error {
-	if err := k8s.ScaleSuspendable(ctx, namespace, s.manifestType, s.name, s.Replicas); err != nil {
+	err := k8s.ScaleSuspendable(ctx, namespace, s.manifestType, s.name, s.Replicas)
+	if apierrors.IsNotFound(err) {
+		slog.Warn("Skipping workload that no longer exists", "namespace", namespace, "name", s.name, "manifestType", s.manifestType)
+		return nil
+	}
+	if err != nil {
 		return fmt.Errorf("Failed to scale resource: %s of type: %d in Namespace: %s, %w", s.name, s.manifestType, namespace, err)
 	}
 	return nil
